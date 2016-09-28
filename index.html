@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+        addEventListener("load", function(){
+            socket.emit("identifier", "bogus identifier");
+        });
+        addEventListener("DOMContentLoaded", function(){
+            document.getElementById("submit").addEventListener("click", sendMsg);
+        });
+        function sendMsg(){
+            var textbox = document.getElementById("message");
+            var msg = textbox.value;
+            socket.emit("chat message", msg);
+            textbox.value = "";
+        }
+    </script>
+    <input type="text" id="message"/>
+    <button id="submit">Submit</button>
+</head>
+<body>
+
+</body>
+</html>
