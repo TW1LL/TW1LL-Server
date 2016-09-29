@@ -10,7 +10,7 @@ let Message = require('./Message');
 let users = {};
 
 app.get('/', function(req, res) {
-    res.sendfile('index.html');
+    res.sendfile('public/index.html');
 });
 
 http.listen(8888, function() {
