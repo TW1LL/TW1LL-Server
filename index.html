@@ -16,6 +16,7 @@
     <script>
         var user = {};
         var users = {};
+
         var socket = io();
         addEventListener("load", function(){
             socket.emit("identifier", "bogus identifier");
