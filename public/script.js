@@ -1,6 +1,7 @@
+"use strict";
 let user = {};
 let users = {};
-let textbox, to_box, message_list, user_list;
+let textBox, toBox, toId, messageList, userList;
 let socket = io();
 
 addEventListener("load", function(){
@@ -9,52 +10,65 @@ addEventListener("load", function(){
 addEventListener("DOMContentLoaded", ready);
 
 function ready() {
-    textbox = document.getElementById("message");
-    to_box = document.getElementById("sendTo");
-    to_id = document.getElementById("sendToId");
-    message_list = document.getElementById("messages");
-    user_list = document.getElementById("users");
+    textBox = document.getElementById("message");
+    toBox = document.getElementById("sendTo");
+    toId = document.getElementById("sendToId");
+    messageList = document.getElementById("messages");
+    userList = document.getElementById("users");
     document.getElementById("submit").addEventListener("click", sendMsg);
 
     user.name = prompt("Please enter your name");
     socket.emit("user name", user.name);
 
-    socket.on("user data", user_data);
-    socket.on("user new", user_new);
-    socket.on("message receive", message_new);
+    socket.on("user data", setUserData);
+    socket.on("user new", addUser);
+    socket.on("message receive", addMessage);
+    socket.on("user list", updateUserList);
 
-    function user_data(assigned_user) {
+    function setUserData(assigned_user) {
         user = assigned_user;
+        users[assigned_user.id] = user;
+        let el = document.getElementById(user.id) || addUser(user);
+        el.innerHTML = user.name;
     }
-    function user_new(new_user) {
+    function addUser(new_user) {
         users[new_user.id] = new_user;
         let li = document.createElement("li");
         li.innerHTML = '<a href="#" class="user" id="'+new_user.id+'">' + new_user.name + '</a>';
         li.addEventListener("click", sendTo);
-        user_list.appendChild(li);
+        userList.appendChild(li);
+        return li;
     }
-    function message_new(message) {
+    function addMessage(message) {
+        console.log(message);
         let li = document.createElement("li");
-        let text = document.createTextNode("<" + message.from + "> " + message.text);
+        let text = document.createTextNode("<" + users[message.from].name + "> " + message.text);
         li.appendChild(text);
-        message_list.appendChild(li);
+        messageList.appendChild(li);
     }
     function sendTo(event) {
-        to_box.value = event.target.innerText;
-        to_id.value = event.target.id;
+        toBox.value = event.target.innerText;
+        toId.value = event.target.id;
     }
     function sendMsg() {
         let message = {
-            "to" : to_id.value,
+            "to" : toId.value,
             "from" : user.id,
-            "text" : textbox.value,
+            "text" : textBox.value,
             "timestamp" : Date.now()
         };
         socket.emit("message send", message);
-        textbox.value = "";
-        let li = document.createElement("li");
-        let new_message = document.createTextNode("<" + user.name + "> " + message.text);
-        li.appendChild(new_message);
-        message_list.append(li);
+        textBox.value = "";
+        addMessage(message);
     }
+
+    function updateUserList(userList) {
+        users = userList;
+        console.log(users);
+        userList.innerHTML = '';
+        for(var i = 0; i< userList.length; i++) {
+            addUser(userList[i]);
+        }
+    }
+
 }

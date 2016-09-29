@@ -1,7 +1,7 @@
 
 "use strict";
-
-let app = require('express')();
+let express = require('express');
+let app = express();
 let http = require('http').Server(app);
 let io = require('socket.io')(http);
 let User = require('./User');
@@ -9,9 +9,8 @@ let Message = require('./Message');
 
 let users = {};
 
-app.get('/', function(req, res) {
-    res.sendfile('public/index.html');
-});
+app.use(express.static('public'));
+
 
 http.listen(8888, function() {
     console.log('listening on *:8888');
@@ -20,13 +19,18 @@ http.listen(8888, function() {
 io.on("connect", connect_socket);
 
 function connect_socket(socket){
-    let user = new User(socket, "user", send);
+    let user = new User(socket, send);
     users[user.id] = user;
     user.socket.emit("user data", user.data);
-    io.emit("user new", user.data);
     user.socket.emit("user list", userList());
     user.socket.on("message send", function (message) {
         users[user.id].send(message);
+    });
+    user.socket.on("user name", function(name) {
+        users[user.id].name = name;
+        user.socket.emit("user data", user.data);
+        user.socket.broadcast.emit("user new", user.data);
+        console.log(userList());
     });
     // user.socket.on("message receive", function (message) {
     //     users[user.id].receive(message);
@@ -34,6 +38,7 @@ function connect_socket(socket){
     user.socket.on("disconnect", function() {
         console.log("User", user.id, "disconnected");
         delete users[user.id];
+        io.emit("user list", userList());
     });
 
 }
@@ -44,9 +49,9 @@ function send(message){
 }
 
 function userList() {
-    var list = [];
-    for(var i = 0; i < users.length; i++) {
-        list.push(users[i].data);
+    var list = {};
+    for(var id in users) {
+        list[users[id].id] = users[id].data;
     }
     return list;
 }

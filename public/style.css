@@ -1,0 +1,25 @@
+.container {
+    display: flex;
+    flex-flow: row wrap;
+}
+.userList {
+    background: #006666;
+    color: #cccccc;
+    flex: 1;
+    padding: 5px;
+}
+.userList a {
+    color: #cccccc
+}
+.userList ul {
+    text-decoration: none;
+}
+.messageList {
+    background: #004444;
+    color: #cccccc;
+    flex: 2;
+}
+
+.messageForm {
+    flex: 100%;
+}

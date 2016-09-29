@@ -4,9 +4,9 @@ let uuid = require('uuid');
 let Message = require('./Message');
 class User {
 
-    constructor(socket, name, send) {
+    constructor(socket, send) {
         this.id = uuid.v1();
-        this.name = name;
+        this.name = null;
         this.messages = [];
         this.socket = socket;
         this.send_callback = send;
