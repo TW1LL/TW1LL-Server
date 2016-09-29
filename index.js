@@ -20,22 +20,27 @@ http.listen(8888, function() {
 io.on("connect", connect_socket);
 
 function connect_socket(socket){
-    let user = new User(socket, "user");
+    let user = new User(socket, "user", send);
     users[user.id] = user;
     user.socket.emit("user data", user.data);
     io.emit("user new", user.data);
-    user.socket.emit("user list", userList())
+    user.socket.emit("user list", userList());
     user.socket.on("message send", function (message) {
         users[user.id].send(message);
     });
-    user.socket.on("message receive", function (message) {
-        users[user.id].receive(message);
-    });
+    // user.socket.on("message receive", function (message) {
+    //     users[user.id].receive(message);
+    // });
     user.socket.on("disconnect", function() {
         console.log("User", user.id, "disconnected");
         delete users[user.id];
     });
 
+}
+
+function send(message){
+    let to = users[message.to];
+    to.receive(message);
 }
 
 function userList() {
@@ -52,6 +57,5 @@ let mods = {
     "users": function() {
         return users;
     }
-
-}
+};
 exports.module = mods;
