@@ -2,9 +2,6 @@
 
 let uuid = require('uuid');
 let Message = require('./Message');
-let io = require('./index').io;
-let users = require('./index').users;
-
 class User {
 
     constructor(socket, name) {
@@ -17,7 +14,8 @@ class User {
     send(message) {
         let new_message = new Message(message.to, this.id, message.text);
         this.messages.push(new_message);
-        user[to].emit("message send", new_message);
+        let users = require('./index').module.users();
+        users[message.to].socket.emit("message send", new_message);
     }
 
     receive(new_message) {

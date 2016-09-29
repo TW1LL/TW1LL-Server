@@ -23,7 +23,8 @@ function connect_socket(socket){
     let user = new User(socket, "user");
     users[user.id] = user;
     user.socket.emit("user data", user.data);
-    user.socket.emit("user new", user.data);
+    io.emit("user new", user.data);
+    user.socket.emit("user list", userList())
     user.socket.on("message send", function (message) {
         users[user.id].send(message);
     });
@@ -32,12 +33,25 @@ function connect_socket(socket){
     });
     user.socket.on("disconnect", function() {
         console.log("User", user.id, "disconnected");
+        delete users[user.id];
     });
 
 }
 
+function userList() {
+    var list = [];
+    for(var i = 0; i < users.length; i++) {
+        list.push(users[i].data);
+    }
+    return list;
+}
+
+
 let mods = {
     "io" : io,
-    "users": users
+    "users": function() {
+        return users;
+    }
+
 }
 exports.module = mods;

@@ -11,38 +11,44 @@
     <ul id="messages"></ul>
     <input type="text" id="sendTo">
     <input type="text" id="message"/>
+    <input type="hidden" id="sendToId">
     <button id="submit">Submit</button>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        var user = {};
-        var users = {};
+        let user = {};
+        let users = {};
 
-        var socket = io();
+        let socket = io();
         addEventListener("load", function(){
             socket.emit("identifier", "bogus identifier");
         });
         addEventListener("DOMContentLoaded", function(){
             document.getElementById("submit").addEventListener("click", sendMsg);
-            var userList = document.getElementsByClassName("sendTo");
-            for(var i in userList) {
+            let userList = document.getElementsByClassName("sendTo");
+            for(let i = 0; i < userList.length; i++) {
                 userList[i].addEventListener("click", sendTo);
             }
         });
 
         function sendTo(event) {
-            document.getElementById("sendTo").value;
+            console.log(document.getElementById("sendTo").value);
+            console.log(event);
+            document.getElementById("sendTo").value = event.target.innerText;
+            document.getElementById("sendToId").value = event.target.id;
         }
         function sendMsg(){
-            var textbox = document.getElementById("message");
-            var text = textbox.value;
-            var message = {
+            let textbox = document.getElementById("message");
+            let to = document.getElementById("sendToId").value;
 
+            let message = {
+                to: to,
+                text: textbox.value
 
             };
-            socket.emit("message send", msg);
+            socket.emit("message send", message);
             textbox.value = "";
-            var li = document.createElement("li");
-            var text = document.createTextNode("<" + user.name + "> " + message.text);
+            let li = document.createElement("li");
+            let text = document.createTextNode("<" + user.name + "> " + message.text);
             li.appendChild(text);
         }
         socket.on("user data", function(user) {
@@ -51,18 +57,20 @@
         });
         socket.on("user new", function(user) {
             users[user.id] = user;
-            var li = document.createElement("li");
-            li.setAttribute("id", user.id);
-            li.innerHTML = '<a href="#" class="user">' + user.name + '</a>';
+            let li = document.createElement("li");
+            li.innerHTML = '<a href="#" class="user" id="'+user.id+'">' + user.name + '</a>';
+            li.addEventListener("click", sendTo);
             document.getElementById("users").appendChild(li);
+
 
         });
         socket.on("message receive", function(message) {
-            var li = document.createElement("li");
-            var text = document.createTextNode("<" + message.from + "> " + message.text);
+            let li = document.createElement("li");
+            let text = document.createTextNode("<" + message.from + "> " + message.text);
             li.appendChild(text);
             document.getElementById("messages").appendChild(li);
         });
+
     </script>
 </body>
 </html>
