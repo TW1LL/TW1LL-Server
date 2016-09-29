@@ -31,38 +31,37 @@
         });
 
         function sendTo(event) {
-            console.log(document.getElementById("sendTo").value);
-            console.log(event);
             document.getElementById("sendTo").value = event.target.innerText;
             document.getElementById("sendToId").value = event.target.id;
         }
-        function sendMsg(){
+        function sendMsg() {
             let textbox = document.getElementById("message");
             let to = document.getElementById("sendToId").value;
-
+            let text = textbox.value;
             let message = {
-                to: to,
-                text: textbox.value
-
+                "to" : to,
+                "from" : user.id,
+                "text" : text,
+                "id" : "",
+                "timestamp" : Date.now()
             };
             socket.emit("message send", message);
             textbox.value = "";
             let li = document.createElement("li");
-            let text = document.createTextNode("<" + user.name + "> " + message.text);
-            li.appendChild(text);
+            let new_message = document.createTextNode("<" + user.name + "> " + message.text);
+            li.appendChild(new_message);
+            document.getElementById("messages").append(li);
         }
-        socket.on("user data", function(user) {
-            user = user;
-            console.log(user);
-        });
+            socket.on("user data", function(assigned_user) {
+                user = assigned_user;
+                console.log(assigned_user);
+            });
         socket.on("user new", function(user) {
             users[user.id] = user;
             let li = document.createElement("li");
             li.innerHTML = '<a href="#" class="user" id="'+user.id+'">' + user.name + '</a>';
             li.addEventListener("click", sendTo);
             document.getElementById("users").appendChild(li);
-
-
         });
         socket.on("message receive", function(message) {
             let li = document.createElement("li");
