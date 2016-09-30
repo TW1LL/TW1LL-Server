@@ -13,6 +13,3 @@ class Message {
 }
 
 module.exports = Message;
-
-let message = new Message('tom', 'will', 'test message');
-console.log(message.id);

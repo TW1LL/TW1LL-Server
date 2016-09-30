@@ -5,6 +5,7 @@
     let users = {};
     let textBox, toBox, toId, messageList, userList;
     let socket = io();
+    let events;
 
     addEventListener("load", function () {
         socket.emit("identifier", "bogus identifier");
@@ -18,15 +19,17 @@
         messageList = document.getElementById("messages");
         userList = document.getElementById("users");
         document.getElementById("submit").addEventListener("click", sendMsg);
+        socket.on("server events", init);
     }
 
-    function init() {
-        socket.on("server user data", assignUser);
-        socket.on("server user connected", addUser);
-        socket.on("server user list", updateUserList);
-        socket.on("server user disconnect", removeUser);
-        socket.on("server user request", requestUser);
-        socket.on("server message receive", addMessage);
+    function init(eventList) {
+        events = eventList;
+        socket.on(events.serverUserData, assignUser);
+        socket.on(events.serverUserConnect, addUser);
+        socket.on(events.serverUserList, updateUserList);
+        socket.on(events.serverUserDisconnect, removeUser);
+        socket.on(events.serverUserRequest, requestUser);
+        socket.on(events.serverMessageReceive, addMessage);
     }
 
     function assignUser(userData) {
@@ -61,7 +64,7 @@
             let name = prompt("Please enter your name: ");
             setUserData("name", name);
         }
-        socket.emit("client user data", getUserData());
+        socket.emit(events.clientUserData, getUserData());
     }
 
     function addUser(newUser) {
@@ -101,7 +104,7 @@
             "text": textBox.value,
             "timestamp": Date.now()
         };
-        socket.emit("client message send", message);
+        socket.emit(clientMessageSend, message);
         textBox.value = "";
         addMessage(message);
     }
@@ -113,7 +116,5 @@
             addUser(userList[i]);
         }
     }
-
-    init()
 
 })();

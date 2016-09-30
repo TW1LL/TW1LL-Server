@@ -8,18 +8,17 @@ let Message = require('./Message');
 
 let users = {}, user = {};
 
-events = {
+let events = {
+    serverEvents: "server events",
     serverUserData : "server user data",
-    serverUserConnect, "server user connect",
-    serverUserDisconnect: "server use disconnect"
+    serverUserConnect: "server user connect",
+    serverUserDisconnect: "server use disconnect",
     serverUserList: "server user list",
     serverUserRequest: "server user request",
     serverMessageReceive: "server message receive",
     clientMessageSend: "client message send",
     clientUserData: "clientUserData"
-}
-
-
+};
 
 app.use(express.static(__dirname + '/public'));
 
@@ -30,7 +29,8 @@ http.listen(8888, function() {
 io.on("connect", connectSocket);
 
 function connectSocket(socket) {
-    socket.emit(events.serverUserRequest, [events, socket.id]);
+    socket.emit(events.serverEvents, events);
+    socket.emit(events.serverUserRequest, socket.id);
     socket.on(events.clientUserData, verifyUser);
     socket.on(events.clientMessageSend, function (message) {
         users[user.id].send(message);
