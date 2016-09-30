@@ -17,27 +17,33 @@ http.listen(8888, function() {
 io.on("connect", connectSocket);
 
 function connectSocket(socket){
-    let user = new User(socket, send);
+    socket.emit("server user request", socket.id);
+    socket.on("client user data", verifyUser);
+    user = new User(socket, send);
     users[user.id] = user;
-    user.socket.emit("user data", user.data);
-    user.socket.emit("user list", userList());
-    user.socket.on("message send", function (message) {
+    user.socket.emit("server user data", user.data);
+    user.socket.emit("server user list", userList());
+    user.socket.on("client message send", function (message) {
         users[user.id].send(message);
     });
-    user.socket.on("user name", function(name) {
+    user.socket.on("client user name", function(name) {
         users[user.id].name = name;
         user.socket.emit("user data", user.data);
-        user.socket.broadcast.emit("user new", user.data);
-    });
-    user.socket.on("message receive", function (message) {
-        users[user.id].receive(message);
+        user.socket.broadcast.emit("server user new", user.data);
     });
     user.socket.on("disconnect", function() {
         console.log("User", user.id, "disconnected");
-        user.socket.broadcast.emit("user disconnect", user.data);
+        user.socket.broadcast.emit("server user disconnect", user.data);
         delete users[user.id];
     });
 
+}
+
+function verifyUser(clientUser) {
+    if (typeof users[clientUser.id] !== "undefined") {
+        user = users[clientUser.id];
+        user.socket = io.sockets[clientUser.socketId];
+    }
 }
 
 function send(message){
