@@ -58,12 +58,12 @@
         if (typeof localStorage["user"] === "undefined"){
             localStorage["user"] = JSON.stringify({});
         }
-        setUserData("socket", socketId);
+        setUserData("socketId", socketId);
         if (typeof getUserData("name") === "undefined") {
             let name = prompt("Please enter your name: ");
             setUserData("name", name);
         }
-        socket.emit(getUserData);
+        socket.emit("client user data", getUserData());
     }
 
     function addUser(newUser) {

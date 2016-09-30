@@ -32,14 +32,19 @@ function connectSocket(socket){
 
 
 function verifyUser(clientUser) {
+    console.log("Verifying user...");
     if (typeof users[clientUser.id] !== "undefined") {
         user = users[clientUser.id];
-        user.socket = io.sockets[clientUser.socketId];
-        user.socket.broadcast.emit("server user connected", user.data);
-
-        user.socket.emit("server user data", user.data);
-        user.socket.emit("server user list", userList());
+    } else {
+        user = new User(send);
+        users[user.id] = user;
     }
+    user.socket = io.sockets.sockets[clientUser.socketId];
+    user.name = clientUser.name;
+    user.socket.broadcast.emit("server user connected", user.data);
+    user.socket.emit("server user data", user.data);
+    user.socket.emit("server user list", userList());
+    console.log(user.data);
 }
 
 function send(message){
