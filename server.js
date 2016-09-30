@@ -8,7 +8,7 @@ let Message = require('./Message');
 
 let users = {};
 
-app.use(express.static('public'));
+app.use(express.static(__dirname + '/public'));
 
 http.listen(8888, function() {
     console.log('listening on *:8888');
