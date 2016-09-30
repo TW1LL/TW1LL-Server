@@ -25,16 +25,16 @@ function ready() {
     socket.on("message receive", addMessage);
     socket.on("user list", updateUserList);
 
-    function setUserData(assigned_user) {
-        user = assigned_user;
-        users[assigned_user.id] = user;
+    function setUserData(assignedUser) {
+        user = assignedUser;
+        users[assignedUser.id] = user;
         let el = document.getElementById(user.id) || addUser(user);
         el.innerHTML = user.name;
     }
-    function addUser(new_user) {
-        users[new_user.id] = new_user;
+    function addUser(newUser) {
+        users[newUser.id] = newUser;
         let li = document.createElement("li");
-        li.innerHTML = '<a href="#" class="user" id="'+new_user.id+'">' + new_user.name + '</a>';
+        li.innerHTML = '<a href="#" class="user" id="'+newUser.id+'">' + newUser.name + '</a>';
         li.addEventListener("click", sendTo);
         userList.appendChild(li);
         return li;

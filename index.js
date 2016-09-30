@@ -16,9 +16,9 @@ http.listen(8888, function() {
     console.log('listening on *:8888');
 });
 
-io.on("connect", connect_socket);
+io.on("connect", connectSocket);
 
-function connect_socket(socket){
+function connectSocket(socket){
     let user = new User(socket, send);
     users[user.id] = user;
     user.socket.emit("user data", user.data);
