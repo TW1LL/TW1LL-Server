@@ -104,12 +104,13 @@
             "text": textBox.value,
             "timestamp": Date.now()
         };
-        socket.emit(clientMessageSend, message);
+        socket.emit(events.clientMessageSend, message);
         textBox.value = "";
         addMessage(message);
     }
 
     function updateUserList(userList) {
+        console.log(userList);
         users = userList;
         userList.innerHTML = '';
         for (var i = 0; i < userList.length; i++) {

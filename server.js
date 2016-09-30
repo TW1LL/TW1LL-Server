@@ -52,9 +52,9 @@ function verifyUser(clientUser) {
     }
     user.socket = io.sockets.sockets[clientUser.socketId];
     user.name = clientUser.name;
-    user.socket.broadcast.emit(events.serverUserConnected, user.data);
-    user.socket.emit("server user data", user.data);
-    user.socket.emit("server user list", userList());
+    user.socket.broadcast.emit(events.serverUserConnect, user.data);
+    user.socket.emit(events.serverUserData, user.data);
+    user.socket.emit(events.serverUserList, userList());
 }
 
 function send(message){
