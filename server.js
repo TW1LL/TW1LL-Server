@@ -8,6 +8,19 @@ let Message = require('./Message');
 
 let users = {}, user = {};
 
+events = {
+    serverUserData : "server user data",
+    serverUserConnect, "server user connect",
+    serverUserDisconnect: "server use disconnect"
+    serverUserList: "server user list",
+    serverUserRequest: "server user request",
+    serverMessageReceive: "server message receive",
+    clientMessageSend: "client message send",
+    clientUserData: "clientUserData"
+}
+
+
+
 app.use(express.static(__dirname + '/public'));
 
 http.listen(8888, function() {
@@ -17,14 +30,14 @@ http.listen(8888, function() {
 io.on("connect", connectSocket);
 
 function connectSocket(socket) {
-    socket.emit("server user request", socket.id);
-    socket.on("client user data", verifyUser);
-    socket.on("client message send", function (message) {
+    socket.emit(events.serverUserRequest, [events, socket.id]);
+    socket.on(events.clientUserData, verifyUser);
+    socket.on(events.clientMessageSend, function (message) {
         users[user.id].send(message);
     });
     socket.on("disconnect", function () {
-        console.log("User", user.id, "disconnected");
-        socket.broadcast.emit("server user disconnect", user.data);
+        console.log("User", user.name, "disconnected");
+        socket.broadcast.emit(events.serverUserDisconnect, user.data);
         delete users[user.id];
     });
 }
@@ -39,7 +52,7 @@ function verifyUser(clientUser) {
     }
     user.socket = io.sockets.sockets[clientUser.socketId];
     user.name = clientUser.name;
-    user.socket.broadcast.emit("server user connected", user.data);
+    user.socket.broadcast.emit(events.serverUserConnected, user.data);
     user.socket.emit("server user data", user.data);
     user.socket.emit("server user list", userList());
 }
