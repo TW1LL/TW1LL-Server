@@ -25,7 +25,8 @@ class User {
     get data() {
         return {
             "id" : this.id,
-            "name": this.name
+            "name": this.name,
+            "socketId": this.socket.id
         };
     }
 }

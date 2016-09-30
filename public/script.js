@@ -23,27 +23,26 @@
 
     function init() {
         socket.emit("client user name", user.name);
-        socket.on("server user data", addUserToPage);
-        socket.on("server user new", addUser);
+        socket.on("server user data", assignUser);
+        socket.on("server user connected", addUser);
         socket.on("server message receive", addMessage);
         socket.on("server user list", updateUserList);
         socket.on("server user disconnect", removeUser);
         socket.on("server user request", requestUser);
     }
 
-    function addUserToPage(assignedUser) {
-        user = assignedUser;
-        users[assignedUser.id] = user;
+    function assignUser(userData) {
+        console.log(userData);
+        user = userData;
+        users[user.id] = user;
         let el = document.getElementById(user.id) || addUser(user);
-        el.innerHTML = '<a href="#" class="user" id="' + user.id + '">' + user.name + '</a>';
-        document.cookie = "username=" + user.name
+        el.innerHTML = '<a href="#" class="user">' + user.name + '</a>';
     }
 
     function getUserData(parameter) {
         if (typeof parameter !== "undefined") {
             return JSON.parse(localStorage["user"])[parameter];
         } else {
-            console.log(localStorage["user"]);
             return JSON.parse(localStorage["user"])
         }
     }
@@ -60,9 +59,9 @@
             localStorage["user"] = JSON.stringify({});
         }
         setUserData("socket", socketId);
-        if (typeof getUserData("username") === "undefined") {
+        if (typeof getUserData("name") === "undefined") {
             let name = prompt("Please enter your name: ");
-            setUserData("username", name);
+            setUserData("name", name);
         }
         socket.emit(getUserData);
     }
@@ -111,7 +110,6 @@
 
     function updateUserList(userList) {
         users = userList;
-        console.log(users);
         userList.innerHTML = '';
         for (var i = 0; i < userList.length; i++) {
             addUser(userList[i]);
