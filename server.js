@@ -44,6 +44,7 @@ function connectSocket(socket) {
 
 function verifyUser(clientUser) {
     console.log("Verifying user...");
+    console.log(clientUser);
     if (typeof users[clientUser.id] !== "undefined") {
         user = users[clientUser.id];
     } else {

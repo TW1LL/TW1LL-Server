@@ -1,7 +1,6 @@
 (function() {
     "use strict";
 
-    let user = {};
     let users = {};
     let textBox, toBox, toId, messageList, userList;
     let socket = io();
@@ -34,10 +33,11 @@
 
     function assignUser(userData) {
         console.log(userData);
-        user = userData;
-        users[user.id] = user;
-        let el = document.getElementById(user.id) || addUser(user);
-        el.innerHTML = '<a href="#" class="user">' + user.name + '</a>';
+        setUserData("id", userData.id);
+        setUser(userData);
+        users[userData.id] = userData;
+        let el = document.getElementById(userData.id) || addUser(userData);
+        el.innerHTML = '<a href="#" class="user">' + userData.name + '</a>';
     }
 
     function getUserData(parameter) {
@@ -49,8 +49,12 @@
     }
 
     function setUserData(parameter, data) {
-        user = getUserData();
+        let user = getUserData();
         user[parameter] = data;
+        localStorage["user"] = JSON.stringify(user);
+    }
+
+    function setUser(user){
         localStorage["user"] = JSON.stringify(user);
     }
 
@@ -67,11 +71,11 @@
         socket.emit(events.clientUserData, getUserData());
     }
 
-    function addUser(newUser) {
-        users[newUser.id] = newUser;
+    function addUser(userData) {
+        users[userData.id] = userData;
         let li = document.createElement("li");
-        li.setAttribute("id", newUser.id);
-        li.innerHTML = '<a href="#" class="user">' + newUser.name + '</a>';
+        li.setAttribute("id", userData.id);
+        li.innerHTML = '<a href="#" class="user">' + userData.name + '</a>';
         li.addEventListener("click", sendTo);
         userList.appendChild(li);
         return li;
@@ -100,7 +104,7 @@
     function sendMsg() {
         let message = {
             "to": toId,
-            "from": user.id,
+            "from": getUserData("id"),
             "text": textBox.value,
             "timestamp": Date.now()
         };
