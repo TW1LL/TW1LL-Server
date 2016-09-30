@@ -41,20 +41,23 @@
 
     function getUserData(parameter) {
         if (typeof parameter !== "undefined") {
-            return JSON.parse(localStorage["user"][parameter]);
+            return JSON.parse(localStorage["user"])[parameter];
         } else {
+            console.log(localStorage["user"]);
             return JSON.parse(localStorage["user"])
         }
     }
 
     function setUserData(parameter, data) {
-        localStorage["user"][parameter] = JSON.stringify(data);
+        user = getUserData();
+        user[parameter] = data;
+        localStorage["user"] = JSON.stringify(user);
     }
 
     function requestUser(socketId) {
         // make sure there's a user in local storage
-        if (typeof localstorage["user"] === "undefined"){
-            localstorage["user"] = {};
+        if (typeof localStorage["user"] === "undefined"){
+            localStorage["user"] = JSON.stringify({});
         }
         setUserData("socket", socketId);
         if (typeof getUserData("username") === "undefined") {
