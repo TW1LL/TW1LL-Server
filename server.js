@@ -16,20 +16,18 @@ http.listen(8888, function() {
 
 io.on("connect", connectSocket);
 
-function connectSocket(socket){
+function connectSocket(socket) {
     socket.emit("server user request", socket.id);
     socket.on("client user data", verifyUser);
     socket.on("client message send", function (message) {
         users[user.id].send(message);
     });
-    socket.on("disconnect", function() {
+    socket.on("disconnect", function () {
         console.log("User", user.id, "disconnected");
         socket.broadcast.emit("server user disconnect", user.data);
         delete users[user.id];
     });
-
 }
-
 
 function verifyUser(clientUser) {
     console.log("Verifying user...");
@@ -44,7 +42,6 @@ function verifyUser(clientUser) {
     user.socket.broadcast.emit("server user connected", user.data);
     user.socket.emit("server user data", user.data);
     user.socket.emit("server user list", userList());
-    console.log(user.data);
 }
 
 function send(message){
@@ -57,6 +54,7 @@ function userList() {
     for(var id in users) {
         list[users[id].id] = users[id].data;
     }
+    console.log(list);
     return list;
 }
 

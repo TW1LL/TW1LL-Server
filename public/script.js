@@ -15,20 +15,18 @@
 
         textBox = document.getElementById("message");
         toBox = document.getElementById("sendTo");
-        toId = document.getElementById("sendToId");
         messageList = document.getElementById("messages");
         userList = document.getElementById("users");
         document.getElementById("submit").addEventListener("click", sendMsg);
     }
 
     function init() {
-        socket.emit("client user name", user.name);
         socket.on("server user data", assignUser);
         socket.on("server user connected", addUser);
-        socket.on("server message receive", addMessage);
         socket.on("server user list", updateUserList);
         socket.on("server user disconnect", removeUser);
         socket.on("server user request", requestUser);
+        socket.on("server message receive", addMessage);
     }
 
     function assignUser(userData) {
@@ -93,17 +91,17 @@
 
     function sendTo(event) {
         toBox.value = event.target.innerText;
-        toId.value = event.target.id;
+        toId = event.target.parentElement.id;
     }
 
     function sendMsg() {
         let message = {
-            "to": toId.value,
+            "to": toId,
             "from": user.id,
             "text": textBox.value,
             "timestamp": Date.now()
         };
-        socket.emit("message send", message);
+        socket.emit("client message send", message);
         textBox.value = "";
         addMessage(message);
     }

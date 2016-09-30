@@ -19,7 +19,7 @@ class User {
 
     receive(newMessage) {
         this.messages.push(newMessage);
-        this.socket.emit("message receive", newMessage);
+        this.socket.emit("server message receive", newMessage);
     }
 
     get data() {
