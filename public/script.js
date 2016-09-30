@@ -1,7 +1,6 @@
 (function() {
     "use strict";
 
-
     let user = {};
     let users = {};
     let textBox, toBox, toId, messageList, userList;
@@ -23,18 +22,16 @@
     }
 
     function init() {
-        user.name = getUsername();
-        socket.emit("user name", user.name);
-
-        socket.on("user data", setUserData);
-        socket.on("user new", addUser);
-        socket.on("message receive", addMessage);
-        socket.on("user list", updateUserList);
-        socket.on("user disconnect", removeUser);
+        socket.emit("client user name", user.name);
+        socket.on("server user data", addUserToPage);
+        socket.on("server user new", addUser);
+        socket.on("server message receive", addMessage);
+        socket.on("server user list", updateUserList);
+        socket.on("server user disconnect", removeUser);
+        socket.on("server user request", requestUser);
     }
 
-
-    function setUserData(assignedUser) {
+    function addUserToPage(assignedUser) {
         user = assignedUser;
         users[assignedUser.id] = user;
         let el = document.getElementById(user.id) || addUser(user);
@@ -42,22 +39,25 @@
         document.cookie = "username=" + user.name
     }
 
-    function getData(parameter) {
-        return localStorage[parameter];
-    }
-
-    function setData(parameter, data) {
-        localStorage[parameter] = data;
-    }
-
-    function getUsername() {
-        if (typeof getData("username") !== "undefined") {
-            return getData("username");
+    function getUserData(parameter) {
+        if (typeof(parameter) !== "undefined") {
+            return JSON.parse(localStorage["user"][parameter]);
         } else {
-            let name = prompt("Please enter your name: ");
-            setData("username", name);
-            return name;
+            return JSON.parse(localStorage["user"])
         }
+    }
+
+    function setUserData(parameter, data) {
+        localStorage["user"][parameter] = JSON.stringify(data);
+    }
+
+    function requestUser(socketId) {
+        setUserData("socket", socketId);
+        if (typeof getUserData("username") === "undefined") {
+            let name = prompt("Please enter your name: ");
+            setUserData("username", name);
+        }
+        socket.emit(getUserData);
     }
 
     function addUser(newUser) {
