@@ -40,7 +40,7 @@
     }
 
     function getUserData(parameter) {
-        if (typeof(parameter) !== "undefined") {
+        if (typeof parameter !== "undefined") {
             return JSON.parse(localStorage["user"][parameter]);
         } else {
             return JSON.parse(localStorage["user"])
@@ -52,6 +52,10 @@
     }
 
     function requestUser(socketId) {
+        // make sure there's a user in local storage
+        if (typeof localstorage["user"] === "undefined"){
+            localstorage["user"] = {};
+        }
         setUserData("socket", socketId);
         if (typeof getUserData("username") === "undefined") {
             let name = prompt("Please enter your name: ");
