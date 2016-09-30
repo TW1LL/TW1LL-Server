@@ -24,6 +24,7 @@ function ready() {
     socket.on("user new", addUser);
     socket.on("message receive", addMessage);
     socket.on("user list", updateUserList);
+    socket.on("user disconnect", removeUser);
 }
 
 function setUserData(assignedUser) {
@@ -36,7 +37,7 @@ function setUserData(assignedUser) {
 
 function getUsername(){
     let usernameStart = document.cookie.indexOf("username=");
-    if (usernameStart > 0){
+    if (usernameStart >= 0){
         let usernameEnd = document.cookie.slice(usernameStart).indexOf(";");
         let cookieNameBuffer = 9;
         if (usernameEnd > 0){
@@ -45,7 +46,7 @@ function getUsername(){
         return document.cookie.slice(usernameStart + cookieNameBuffer);
     }
     else {
-        console.log(document.cookie);
+        console.log(document.cookie, usernameStart);
         return prompt("Please enter your name");
     }
 }
@@ -53,11 +54,20 @@ function getUsername(){
 function addUser(newUser) {
     users[newUser.id] = newUser;
     let li = document.createElement("li");
-    li.innerHTML = '<a href="#" class="user" id="'+newUser.id+'">' + newUser.name + '</a>';
+    li.setAttribute("id", newUser.id);
+    li.innerHTML = '<a href="#" class="user">' + newUser.name + '</a>';
     li.addEventListener("click", sendTo);
     userList.appendChild(li);
     return li;
 }
+
+function removeUser(userData){
+    console.log("User disconnected", userData);
+    let userDisplay = document.getElementById(userData.id);
+    console.log(userDisplay, userList);
+    userList.removeChild(userDisplay);
+}
+
 function addMessage(message) {
     console.log(message);
     let li = document.createElement("li");

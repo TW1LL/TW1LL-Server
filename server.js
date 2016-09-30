@@ -1,4 +1,3 @@
-
 "use strict";
 let express = require('express');
 let app = express();
@@ -10,7 +9,6 @@ let Message = require('./Message');
 let users = {};
 
 app.use(express.static('public'));
-
 
 http.listen(8888, function() {
     console.log('listening on *:8888');
@@ -30,15 +28,14 @@ function connectSocket(socket){
         users[user.id].name = name;
         user.socket.emit("user data", user.data);
         user.socket.broadcast.emit("user new", user.data);
-        console.log(userList());
     });
-    // user.socket.on("message receive", function (message) {
-    //     users[user.id].receive(message);
-    // });
+    user.socket.on("message receive", function (message) {
+        users[user.id].receive(message);
+    });
     user.socket.on("disconnect", function() {
         console.log("User", user.id, "disconnected");
+        user.socket.broadcast.emit("user disconnect", user.data);
         delete users[user.id];
-        io.emit("user list", userList());
     });
 
 }
