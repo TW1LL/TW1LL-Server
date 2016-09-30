@@ -29,7 +29,7 @@ function ready() {
         user = assignedUser;
         users[assignedUser.id] = user;
         let el = document.getElementById(user.id) || addUser(user);
-        el.innerHTML = user.name;
+        el.innerHTML = '<a href="#" class="user" id="'+user.id+'">' + user.name + '</a>';
     }
     function addUser(newUser) {
         users[newUser.id] = newUser;

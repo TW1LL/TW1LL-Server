@@ -1,6 +1,27 @@
-.container {
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+}
+.wrapper {
     display: flex;
-    flex-flow: row wrap;
+    flex-flow: column;
+    height: 100%;
+    align-items: stretch;
+}
+.header {
+    text-align: center;
+    background: #999999;
+    flex: 1;
+}
+.content {
+    display: flex;
+    flex: auto;
+}
+.messageForm {
+    display: flex;
+    flex: 1;
+
 }
 .userList {
     background: #006666;
@@ -8,18 +29,42 @@
     flex: 1;
     padding: 5px;
 }
-.userList a {
-    color: #cccccc
-}
-.userList ul {
-    text-decoration: none;
-}
 .messageList {
     background: #004444;
     color: #cccccc;
-    flex: 2;
+    flex: 3;
+    overflow: auto;
 }
 
-.messageForm {
-    flex: 100%;
+.userList a {
+    color: #cccccc;
+    text-decoration: none;
+}
+.userList a:hover {
+    text-decoration: underline;
+    color: #bbbbbb;
+}
+.userList ul li, .messageList ul li {
+    list-style-type: none;
+}
+.userList h3 {
+    text-align: center;
+    border-bottom: 1px solid #bbbbbb;
+}
+/* input stuff */
+#sendTo {
+    flex: 1;
+}
+.messageInput {
+    flex: 3;
+    display: flex;
+}
+#message {
+    flex: auto;
+}
+input[type=text] {
+    padding: 5px;
+    background: #dddddd;
+    border: 0;
+    border-right: 2px solid black;
 }
