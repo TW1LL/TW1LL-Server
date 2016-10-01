@@ -18,6 +18,7 @@
         messageList = document.getElementById("messages");
         userList = document.getElementById("users");
         document.getElementById("submit").addEventListener("click", sendMsg);
+        textBox.addEventListener("keypress", checkForEnter);
         socket.on("server events", init);
     }
 
@@ -35,7 +36,6 @@
     }
 
     function assignUser(userData) {
-        console.log(userData);
         setUserData("id", userData.id);
         setUser(userData);
         users[userData.id] = userData;
@@ -71,7 +71,6 @@
             let name = prompt("Please enter your name: ");
             setUserData("name", name);
         }
-        console.log("sending to verify");
         socket.emit(events.clientUserData, getUserData());
     }
 
@@ -93,7 +92,6 @@
     }
 
     function addMessage(message) {
-        console.log(message);
         let li = document.createElement("li");
         let text = document.createTextNode("<" + users[message.from].name + "> " + message.text);
         li.appendChild(text);
@@ -105,6 +103,11 @@
         toId = event.target.parentElement.id;
     }
 
+    function checkForEnter(event) {
+        if (event.keyCode == 13) {
+            sendMsg();
+        }
+    }
     function sendMsg() {
         let message = {
             "to": toId,
@@ -118,7 +121,6 @@
     }
 
     function updateUserList(list) {
-        console.log(list);
         users = list;
         userList.innerHTML = '';
         for (let i in list) {
