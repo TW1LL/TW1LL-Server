@@ -117,12 +117,12 @@
         addMessage(message);
     }
 
-    function updateUserList(userList) {
-        console.log(userList);
-        users = userList;
+    function updateUserList(list) {
+        console.log(list);
+        users = list;
         userList.innerHTML = '';
-        for (var i = 0; i < userList.length; i++) {
-            addUser(userList[i]);
+        for (let i in list) {
+            addUser(list[i]);
         }
     }
 
