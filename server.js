@@ -73,9 +73,9 @@ function send(message){
 function userList() {
     var list = {};
     for(let user in usersOnline) {
-        list[usersOnline[user]] = users[usersOnline[user].data];
+        list[usersOnline[user]] = users[usersOnline[user]].data;
     }
-    //console.log("generating userlist", list);
+    console.log("generating userlist", list);
     return list;
 }
 
