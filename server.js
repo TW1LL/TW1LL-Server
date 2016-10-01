@@ -34,8 +34,6 @@ function connectSocket(socket) {
     socket.emit(events.serverUserRequest, socket.id);
     socket.on(events.clientUserData, verifyUser);
     socket.on(events.clientMessageSend, function (message) {
-        console.log(usersOnline);
-        console.log(message);
         users[message.from].send(message);
     });
     socket.on("disconnect", function () {
@@ -53,7 +51,7 @@ function verifyUser(clientUser) {
     if (typeof users[clientUser.id] !== "undefined") {
         user = users[clientUser.id];
     } else {
-        console.log("Creating new user");
+        console.log("Creating new user", clientUser.name);
         user = new User(send);
         usersOnline.push(user.id);
         users[user.id] = user;
@@ -75,7 +73,6 @@ function userList() {
     for(let user in usersOnline) {
         list[usersOnline[user]] = users[usersOnline[user]].data;
     }
-    console.log("generating userlist", list);
     return list;
 }
 
