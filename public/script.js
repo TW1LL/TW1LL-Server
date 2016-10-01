@@ -29,6 +29,9 @@
         socket.on(events.serverUserDisconnect, removeUser);
         socket.on(events.serverUserRequest, requestUser);
         socket.on(events.serverMessageReceive, addMessage);
+        socket.on("disconnect", function(){
+            socket.disconnect();
+        })
     }
 
     function assignUser(userData) {
@@ -68,6 +71,7 @@
             let name = prompt("Please enter your name: ");
             setUserData("name", name);
         }
+        console.log("sending to verify");
         socket.emit(events.clientUserData, getUserData());
     }
 

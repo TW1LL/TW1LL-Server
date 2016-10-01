@@ -6,7 +6,7 @@ let io = require('socket.io')(http);
 let User = require('./User');
 let Message = require('./Message');
 
-let users = {}, user = {};
+let usersOnline = [], users = {};
 
 let events = {
     serverEvents: "server events",
@@ -29,26 +29,33 @@ http.listen(8888, function() {
 io.on("connect", connectSocket);
 
 function connectSocket(socket) {
+    console.log("user logging in");
     socket.emit(events.serverEvents, events);
     socket.emit(events.serverUserRequest, socket.id);
     socket.on(events.clientUserData, verifyUser);
     socket.on(events.clientMessageSend, function (message) {
-        users[user.id].send(message);
+        console.log(usersOnline);
+        console.log(message);
+        users[message.from].send(message);
     });
     socket.on("disconnect", function () {
-        console.log("User", user.name, "disconnected");
+        let user = findUserBySocket(socket.id);
+        console.log("User disconnected");
         socket.broadcast.emit(events.serverUserDisconnect, user.data);
-        delete users[user.id];
+        let index = find(usersOnline, "id", user.id);
+        usersOnline = usersOnline.slice(index);
     });
 }
 
 function verifyUser(clientUser) {
-    console.log("Verifying user...");
-    console.log(clientUser);
+    console.log("verifying user");
+    let user;
     if (typeof users[clientUser.id] !== "undefined") {
         user = users[clientUser.id];
     } else {
+        console.log("Creating new user");
         user = new User(send);
+        usersOnline.push(user.id);
         users[user.id] = user;
     }
     user.socket = io.sockets.sockets[clientUser.socketId];
@@ -65,18 +72,34 @@ function send(message){
 
 function userList() {
     var list = {};
-    for(var id in users) {
-        list[users[id].id] = users[id].data;
+    for(let user in usersOnline) {
+        list[usersOnline[user]] = users[usersOnline[user].data];
     }
-    console.log(list);
+    //console.log("generating userlist", list);
     return list;
 }
 
+function findUserBySocket(socketId){
+    for (let id in users){
+        if (users[id].socket.id == socketId){
+            return users[id];
+        }
+    }
+    return null;
+}
+
+function find(array, parameter, value){
+    for (let i = 0; i < array.length; i++){
+        if (array[i][parameter] == value){
+            return i
+        }
+    }
+}
 
 let mods = {
     "io" : io,
     "users": function() {
-        return users;
+        return usersOnline;
     }
 };
 exports.module = mods;
