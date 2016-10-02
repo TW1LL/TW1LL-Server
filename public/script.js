@@ -2,13 +2,10 @@
     "use strict";
 
     let users = {};
-    let textBox, toBox, toId, messageList, userList, loginEmail, loginPassword;
+    let textBox, toBox, toId, messageList, userList, userInfo, loginForm, loginEmail, loginPassword;
     let socket;
     let events;
 
-    addEventListener("load", function () {
-        socket.emit("identifier", "bogus identifier");
-    });
     addEventListener("DOMContentLoaded", ready);
 
     function ready() {
@@ -17,11 +14,22 @@
         toBox = document.getElementById("sendTo");
         messageList = document.getElementById("messages");
         userList = document.getElementById("users");
+        loginForm = document.getElementById("loginForm");
         loginEmail = document.getElementById("loginEmail");
         loginPassword = document.getElementById("loginPassword");
+        userInfo = document.getElementById("userInfo");
+        userInfo.style.display = "none";
         document.getElementById("submit").addEventListener("click", sendMsg);
         document.getElementById("loginSubmit").addEventListener("click", login);
         textBox.addEventListener("keypress", checkForEnter);
+    }
+
+    function connect() {
+        socket = io.connect('', { query: 'token=' + getUserToken() });
+        userInfo.innerHTML = '<a href="#">'+loginEmail.value+'</a>';
+        setUserData("email", loginEmail.value);
+        loginForm.style.display = "none";
+        userInfo.style.display = "initial";
         socket.on("server events", init);
     }
 
@@ -44,16 +52,12 @@
         http.send();
         http.onload = function() {
             let res = JSON.parse(this.response);
-            console.log(res);
             if (typeof res.token !== "undefined") {
                 setUserToken(res.token);
-                socket = io.connect('', {
-                    query: 'token=' + getUserToken()
-                });
+                connect();
             } else {
                 sendError('Failed to login');
             }
-
         }
     }
 
@@ -66,6 +70,9 @@
     }
 
     function getUserData(parameter) {
+        if (typeof localStorage["user"] === "undefined"){
+            localStorage["user"] = JSON.stringify({});
+        }
         if (typeof parameter !== "undefined") {
             return JSON.parse(localStorage["user"])[parameter];
         } else {
@@ -94,15 +101,7 @@
     }
 
     function requestUser(socketId) {
-        // make sure there's a user in local storage
-        if (typeof localStorage["user"] === "undefined"){
-            localStorage["user"] = JSON.stringify({});
-        }
         setUserData("socketId", socketId);
-        if (typeof getUserData("name") === "undefined") {
-            let name = prompt("Please enter your name: ");
-            setUserData("name", name);
-        }
         socket.emit(events.clientUserData, getUserData());
     }
 
@@ -110,7 +109,7 @@
         users[userData.id] = userData;
         let li = document.createElement("li");
         li.setAttribute("id", userData.id);
-        li.innerHTML = '<a href="#" class="user">' + userData.name + '</a>';
+        li.innerHTML = '<a href="#" class="user">' + userData.email + '</a>';
         li.addEventListener("click", sendTo);
         userList.appendChild(li);
         return li;
@@ -119,13 +118,13 @@
     function removeUser(userData) {
         console.log("User disconnected", userData);
         let userDisplay = document.getElementById(userData.id);
-        console.log(userDisplay, userList);
+        delete users[userData.id];
         userList.removeChild(userDisplay);
     }
 
     function addMessage(message) {
         let li = document.createElement("li");
-        let text = document.createTextNode("<" + users[message.from].name + "> " + message.text);
+        let text = document.createTextNode("<" + users[message.from].email + "> " + message.text);
         li.appendChild(text);
         messageList.appendChild(li);
     }

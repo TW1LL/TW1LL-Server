@@ -36,7 +36,7 @@ class Database {
             "getUser": getUserQuery,
             "getMessage": getMessageQuery
         };
-        this.queries = prepareQueries(queries);
+        this.queries = prepareQueries(this.db, queries);
 
     }
 
@@ -62,7 +62,7 @@ class Database {
 }
 
 // sets up the queries specified as prepared statements in sql, returns the statements with their original label
-function prepareQueries(queries){
+function prepareQueries(db, queries){
     let statements  = {};
     for(let query in queries){
         let queryText = queries[query];

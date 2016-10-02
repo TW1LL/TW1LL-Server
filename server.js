@@ -10,11 +10,17 @@ let options = {
 };
 let http = require('https').createServer(options, app);
 let io = require('socket.io')(http);
+let Log = require('./Log');
 let User = require('./User');
 let Message = require('./Message');
 let db = require('./Database');
 let usersOnline = [], users = {};
 
+let config = {
+    serverPort: 443,
+    logLevel: "high",
+};
+let log = new Log(config.logLevel);
 let events = {
     serverEvents: "server events",
     serverUserData : "server user data",
@@ -29,22 +35,18 @@ let events = {
 
 app.use(express.static(__dirname + '/public'));
 
-let serverPort = 443;
-http.listen(serverPort, function() {
-    console.log('listening on *:', serverPort);
+http.listen(config.serverPort, function() {
+    log.event('HTTPS server started. Listening on port ' + config.serverPort);
 });
+
 app.post('/login/:email/:pass', function (req,res) {
+    log.event('Authorizing user...');
     // TODO: check userDb for valid login/password
     let profile = { // TODO: will be response from Db
         "email": req.params.email
     };
-    console.log(profile);
     let token = jwt.sign(profile, 'super_secret code', { expiresIn: "2 days"});
     res.json({token: token});
-});
-
-http.listen(8888, function() {
-    console.log('listening on *:8888');
 });
 
 io.use(jwtIO.authorize({
@@ -55,7 +57,7 @@ io.use(jwtIO.authorize({
 io.on("connect", connectSocket);
 
 function connectSocket(socket) {
-    console.log(socket.decoded_token.email +" connected.");
+    log.event(socket.decoded_token.email +" connected.");
     socket.emit(events.serverEvents, events);
     socket.emit(events.serverUserRequest, socket.id);
     socket.on(events.clientUserData, verifyUser);
@@ -64,7 +66,7 @@ function connectSocket(socket) {
     });
     socket.on("disconnect", function () {
         let user = findUserBySocket(socket.id);
-        console.log("User disconnected");
+        log.event("User "+user.email+" disconnected");
         socket.broadcast.emit(events.serverUserDisconnect, user.data);
         let index = find(usersOnline, "id", user.id);
         usersOnline = usersOnline.slice(index);
@@ -72,24 +74,26 @@ function connectSocket(socket) {
 }
 
 function verifyUser(clientUser) {
-    console.log("verifying user");
+    log.event("Verifying user...");
     let user;
     if (typeof users[clientUser.id] !== "undefined") {
+        log.event("User verified.");
         user = users[clientUser.id];
     } else {
-        console.log("Creating new user", clientUser.name);
+        log.event("No user found, creating new user ", clientUser.email);
         user = new User(send);
         usersOnline.push(user.id);
         users[user.id] = user;
     }
     user.socket = io.sockets.sockets[clientUser.socketId];
-    user.name = clientUser.name;
+    user.email = clientUser.email;
     user.socket.broadcast.emit(events.serverUserConnect, user.data);
     user.socket.emit(events.serverUserData, user.data);
     user.socket.emit(events.serverUserList, userList());
 }
 
 function send(message){
+    log.recurrent(" MSG >> " + users[message.from].email + " > " + users[message.to].email);
     let to = users[message.to];
     to.receive(message);
 }
@@ -99,15 +103,19 @@ function userList() {
     for(let user in usersOnline) {
         list[usersOnline[user]] = users[usersOnline[user]].data;
     }
+    log.event("Generating new user list with " + Object.keys(list).length + " users");
     return list;
 }
 
 function findUserBySocket(socketId){
+    log.event("Attempting to find user by socket...");
     for (let id in users){
         if (users[id].socket.id == socketId){
+            log.event("user found");
             return users[id];
         }
     }
+    log.event("user not found");
     return null;
 }
 
@@ -118,4 +126,3 @@ function find(array, parameter, value){
         }
     }
 }
-

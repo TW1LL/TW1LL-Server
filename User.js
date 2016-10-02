@@ -5,8 +5,12 @@ let Message = require('./Message');
 class User {
 
     constructor(send) {
-        this.id = uuid.v1();
-        this.name = null;
+        this._id = uuid.v1(); // underscore infers private
+        this.public = {
+            id: this._id,
+            email: null,
+            friends: []
+        };
         this.messages = [];
         this.socket = null;
         this.sendCallback = send;
@@ -22,13 +26,32 @@ class User {
         this.socket.emit("server message receive", newMessage);
     }
 
-    get data() {
-        return {
-            "id" : this.id,
-            "name": this.name,
-            "socketId": this.socket.id
-        };
+    get id() {
+        return this._id;
     }
+    set id(id) {
+    // invalid, cannot change user id
+    }
+    get email() {
+        return this.public.email;
+    }
+    set email(email) {
+        this.public.email = email;
+    }
+    get friends() {
+        return this.public.friends;
+    }
+    addFriend(friend) {
+        this.public.friends.push(friend);
+    }
+    removeFriend(friendId) {
+        this.public.friends.slice(this.public.friends.indexOf(friendId));
+    }
+
+    get data() {
+        return this.public;
+    }
+
 }
 
 module.exports = User;
