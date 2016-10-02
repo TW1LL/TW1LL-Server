@@ -4,17 +4,15 @@ let express = require('express');
 let app = express();
 let jwt = require('jsonwebtoken');
 let jwtIO = require('socketio-jwt');
-// set options for https server
 let options = {
     key: fs.readFileSync('./https/file.pem'),
     cert: fs.readFileSync('./https/file.crt')
 };
-
 let http = require('https').createServer(options, app);
 let io = require('socket.io')(http);
 let User = require('./User');
 let Message = require('./Message');
-
+let db = require('./Database');
 let usersOnline = [], users = {};
 
 let events = {
