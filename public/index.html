@@ -3,12 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="style.css" rel="stylesheet" type="text/css">
 </head>
 <body>
     <div class="wrapper">
         <div class="header">
-            <h2>TW1LL MSG</h2>
+            <span>TW1LL MSG</span>
+            <div class="loginForm">
+                <input type="text" name="email" id="loginEmail" />
+                <input type="password" name="password" id="loginPassword" />
+                <button id="loginSubmit">Login</button><button id="register">Register</button>
+            </div>
+            <div class="loggedIn">
+
+            </div>
         </div>
         <div class="content">
             <div class="userList">
@@ -27,6 +36,7 @@
             </div>
         </div>
     </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>

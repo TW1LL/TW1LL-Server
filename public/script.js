@@ -2,8 +2,8 @@
     "use strict";
 
     let users = {};
-    let textBox, toBox, toId, messageList, userList;
-    let socket = io();
+    let textBox, toBox, toId, messageList, userList, loginEmail, loginPassword;
+    let socket;
     let events;
 
     addEventListener("load", function () {
@@ -17,7 +17,10 @@
         toBox = document.getElementById("sendTo");
         messageList = document.getElementById("messages");
         userList = document.getElementById("users");
+        loginEmail = document.getElementById("loginEmail");
+        loginPassword = document.getElementById("loginPassword");
         document.getElementById("submit").addEventListener("click", sendMsg);
+        document.getElementById("loginSubmit").addEventListener("click", login);
         textBox.addEventListener("keypress", checkForEnter);
         socket.on("server events", init);
     }
@@ -33,6 +36,25 @@
         socket.on("disconnect", function(){
             socket.disconnect();
         })
+    }
+
+    function login() {
+        let http = new XMLHttpRequest();
+        http.open("POST", "/login/"+loginEmail.value+"/"+loginPassword.value, true);
+        http.send();
+        http.onload = function() {
+            let res = JSON.parse(this.response);
+            console.log(res);
+            if (typeof res.token !== "undefined") {
+                setUserToken(res.token);
+                socket = io.connect('', {
+                    query: 'token=' + getUserToken()
+                });
+            } else {
+                sendError('Failed to login');
+            }
+
+        }
     }
 
     function assignUser(userData) {
@@ -51,12 +73,22 @@
         }
     }
 
+    function sendError(message) {
+        alert(message);
+    }
     function setUserData(parameter, data) {
         let user = getUserData();
         user[parameter] = data;
         localStorage["user"] = JSON.stringify(user);
     }
 
+    function setUserToken(token) {
+        localStorage["userToken"] = token;
+
+    }
+    function getUserToken() {
+        return localStorage["userToken"];
+    }
     function setUser(user){
         localStorage["user"] = JSON.stringify(user);
     }

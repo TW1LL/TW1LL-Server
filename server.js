@@ -2,6 +2,8 @@
 let fs = require('fs');
 let express = require('express');
 let app = express();
+let jwt = require('jsonwebtoken');
+let jwtIO = require('socketio-jwt');
 // set options for https server
 let options = {
     key: fs.readFileSync('./https/file.pem'),
@@ -33,11 +35,29 @@ let serverPort = 443;
 http.listen(serverPort, function() {
     console.log('listening on *:', serverPort);
 });
+app.post('/login/:email/:pass', function (req,res) {
+    // TODO: check userDb for valid login/password
+    let profile = { // TODO: will be response from Db
+        "email": req.params.email
+    };
+    console.log(profile);
+    let token = jwt.sign(profile, 'super_secret code', { expiresIn: "2 days"});
+    res.json({token: token});
+});
+
+http.listen(8888, function() {
+    console.log('listening on *:8888');
+});
+
+io.use(jwtIO.authorize({
+    secret: 'super_secret code',
+    handshake: true
+}));
 
 io.on("connect", connectSocket);
 
 function connectSocket(socket) {
-    console.log("user logging in");
+    console.log(socket.decoded_token.email +" connected.");
     socket.emit(events.serverEvents, events);
     socket.emit(events.serverUserRequest, socket.id);
     socket.on(events.clientUserData, verifyUser);
@@ -101,10 +121,3 @@ function find(array, parameter, value){
     }
 }
 
-let mods = {
-    "io" : io,
-    "users": function() {
-        return usersOnline;
-    }
-};
-exports.module = mods;
