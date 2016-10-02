@@ -1,7 +1,5 @@
 "use strict";
-
 let sqlite3 = require("sqlite3").verbose();
-
 
 class Database {
 
@@ -43,25 +41,39 @@ class Database {
     }
 
 
+
     getUser(id){
-        return queryStatements["getUser"].get(id);
+        return this.queries["getUser"].get(id);
     }
 
     getMessage(id){
-        return queryStatements["getMessage"].get(id);
+        return this.queries["getMessage"].get(id);
     }
 
     createUser(user){
-        return queryStatements["setUser"].run([user.id, user.name]);
+        let data = [user.id, user.name];
+        return this.queries["setUser"].run(data);
     }
 
     createMessage(message){
         let data = [message.id, message.to, message.from, message.text, message.timestamp];
-        return queryStatements["setMessage"].run(data);
+        return this.queries["setMessage"].run(data);
     }
 }
 
-
+// sets up the queries specified as prepared statements in sql, returns the statements with their original label
+function prepareQueries(queries){
+    let statements  = {};
+    for(let query in queries){
+        let queryText = queries[query];
+        let preparedStatement = db.prepare(queryText, null, function(error){
+            if (error){
+                console.log("error preparing query", query, error);
+            }
+        });
+        statements[query] = preparedStatement;
+    }
+    return statements;
+}
 
 module.exports = new Database();
-
