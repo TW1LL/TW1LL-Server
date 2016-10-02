@@ -1,7 +1,14 @@
 "use strict";
+let fs = require('fs');
 let express = require('express');
 let app = express();
-let http = require('http').Server(app);
+// set options for https server
+let options = {
+    key: fs.readFileSync('./https/file.pem'),
+    cert: fs.readFileSync('./https/file.crt')
+};
+
+let http = require('https').createServer(options, app);
 let io = require('socket.io')(http);
 let User = require('./User');
 let Message = require('./Message');
@@ -22,8 +29,9 @@ let events = {
 
 app.use(express.static(__dirname + '/public'));
 
-http.listen(8888, function() {
-    console.log('listening on *:8888');
+let serverPort = 443;
+http.listen(serverPort, function() {
+    console.log('listening on *:', serverPort);
 });
 
 io.on("connect", connectSocket);
