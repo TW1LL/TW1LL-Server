@@ -41,12 +41,35 @@ http.listen(config.serverPort, function() {
 
 app.post('/login/:email/:pass', function (req,res) {
     log.event('Authorizing user...');
-    // TODO: check userDb for valid login/password
-    let profile = { // TODO: will be response from Db
-        "email": req.params.email
-    };
-    let token = jwt.sign(profile, 'super_secret code', { expiresIn: "2 days"});
-    res.json({token: token});
+    let auth = authorize(req.params.email, req.params.pass);
+    if (auth[0]) {
+        let token = jwt.sign(auth[1], 'super_secret code', {expiresIn: "2 days"});
+        let response = {
+            valid: auth[0],
+            token: token,
+            id: auth[1].id
+        };
+        res.json(response);
+    } else {
+        res.json({valid: auth[0], message: auth[1]});
+    }
+});
+
+app.post('/register/:email/:pass', function (req,res) {
+    log.event('Registering user...');
+    // TODO: Create user
+    let auth = authorize(req.params.email, req.params.pass);
+    if (auth[0]) {
+        let token = jwt.sign(auth[1], 'super_secret code', {expiresIn: "2 days"});
+        let response = {
+            valid: auth[0],
+            token: token,
+            id: auth[1].id
+        };
+        res.json(response);
+    } else {
+        res.json({valid: auth[0], message: auth[1]});
+    }
 });
 
 io.use(jwtIO.authorize({
@@ -55,6 +78,17 @@ io.use(jwtIO.authorize({
 }));
 
 io.on("connect", connectSocket);
+
+function authorize(email, password) {
+    // TODO: check userDb for valid login/password
+    return [
+        true,   // response from DB
+        {           // data from Db
+            "id": null,
+            "email": email
+        }
+    ];
+}
 
 function connectSocket(socket) {
     log.event(socket.decoded_token.email +" connected.");

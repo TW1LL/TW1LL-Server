@@ -9,37 +9,38 @@
     <link rel="icon" href="icon.png" type="image/png">
 </head>
 <body>
-    <div class="wrapper">
-        <div class="header">
-            <span>TW1LL MSG</span>
+    <div id="wrapper">
+        <div id="header">
+            <span class="header">TW1LL MSG</span>
             <div id="loginForm">
                 <input type="text" name="email" id="loginEmail" />
                 <input type="password" name="password" id="loginPassword" />
-                <button id="loginSubmit">Login</button><button id="register">Register</button>
+                <button id="loginSubmit">Login</button><button id="registerSubmit">Register</button>
             </div>
             <div id="userInfo">
 
             </div>
         </div>
-        <div class="content">
-            <div class="userList">
+        <div id="content">
+            <div id="usersBox">
                 <h3>Users</h3>
-                <ul id="users"></ul>
+                <ul id="userList"></ul>
             </div>
-            <div class="messageList">
-                <ul id="messages"></ul>
+            <div id="messagesBox">
+                <ul id="messageList"></ul>
             </div>
         </div>
-        <div class="messageForm">
-            <input type="text" id="sendTo" placeholder="Send To...">
+        <div id="footer">
+            <input type="text" id="toBox" placeholder="Send To...">
             <div class="messageInput">
-                <input type="text" id="message" placeholder="Enter Message here"/>
+                <input type="text" id="messageBox" placeholder="Enter Message here"/>
                 <button id="submit">▶</button>
             </div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="dom.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
