@@ -15,28 +15,46 @@
         DOM.find("loginSubmit").on("click", login);
         DOM.find("registerSubmit").on("click", register);
         DOM.messageBox.on("keypress", checkForEnter);
+        checkLoginStatus();
     }
 
     function connect() {
-        socket = io.connect('', { query: 'token=' + getUserToken() });
-        DOM.userInfo.innerHTML = '<a href="#">'+DOM.loginEmail.value+'</a>';
-        setUserData("email", loginEmail.value);
+        socket = io.connect();
+        socket.emit('authenticate', {token: getUserToken()});
+        socket.on("authenticated", authorized);
+        socket.on("unauthorized", unauthorized);
+    }
+    function authorized() {
+        console.log('user authorized! at ' + Date.now());
         DOM.loginForm.hide();
         DOM.userInfo.show();
         socket.on("server events", init);
     }
 
+    function unauthorized(error, callback) {
+        if (error.data.type == "UnauthorizedError" || error.data.code == "invalid_token") {
+            sendError("User's token is invalid and requires new login");
+        }
+
+    }
     function init(eventList) {
+        console.log('User connected');
         events = eventList;
-        socket.on(events.serverUserData, assignUser);
+        socket.on(events.serverUserData2, assignUser);
         socket.on(events.serverUserConnect, addUser);
         socket.on(events.serverUserList, updateUserList);
         socket.on(events.serverUserDisconnect, removeUser);
-        socket.on(events.serverUserRequest, requestUser);
+        socket.on(events.serverUserData,  serverUserData);
         socket.on(events.serverMessageReceive, addMessage);
         socket.on("disconnect", function(){
             socket.disconnect();
         })
+    }
+
+    function checkLoginStatus() {
+        if (typeof getUserToken() !== "undefined") {
+            connect();
+        }
     }
 
     function login() {
@@ -68,12 +86,13 @@
             }
         }
     }
+
     function assignUser(userData) {
         setUserData("id", userData.id);
         setUser(userData);
         users[userData.id] = userData;
         let el = DOM.find(userData.id) || addUser(userData);
-        el.innerHTML = '<a href="#" class="user">' + userData.name + '</a>';
+        el.innerHTML = '<a href="#" class="user">' + userData.email + '</a>';
     }
 
     function getUserData(parameter) {
@@ -107,9 +126,11 @@
         localStorage["user"] = JSON.stringify(user);
     }
 
-    function requestUser(socketId) {
-        setUserData("socketId", socketId);
-        socket.emit(events.clientUserData, getUserData());
+    function serverUserData(userData) {
+        setUser(userData);
+        let el = DOM.find(userData.id) || addUser(userData);
+        el.innerHTML = '<a href="#" class="user">' + userData.email + '</a>';
+        DOM.userInfo.innerHTML = '<a href="#">' + userData.email + '</a>';
     }
 
     function addUser(userData) {

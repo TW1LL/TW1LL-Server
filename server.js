@@ -23,11 +23,11 @@ let config = {
 let log = new Log(config.logLevel);
 let events = {
     serverEvents: "server events",
-    serverUserData : "server user data",
+    serverUserData2 : "server user data2",
     serverUserConnect: "server user connect",
     serverUserDisconnect: "server use disconnect",
     serverUserList: "server user list",
-    serverUserRequest: "server user request",
+    serverUserData: "server user data",
     serverMessageReceive: "server message receive",
     clientMessageSend: "client message send",
     clientUserData: "clientUserData"
@@ -42,16 +42,16 @@ http.listen(config.serverPort, function() {
 app.post('/login/:email/:pass', function (req,res) {
     log.event('Authorizing user...');
     let auth = authorize(req.params.email, req.params.pass);
-    if (auth[0]) {
-        let token = jwt.sign(auth[1], 'super_secret code', {expiresIn: "2 days"});
+    if (auth["valid"]) {
+        let token = jwt.sign(auth["data"], 'super_secret code', {expiresIn: "7d"});
         let response = {
-            valid: auth[0],
+            valid: auth["valid"],
             token: token,
-            id: auth[1].id
+            id: auth["data"].id
         };
         res.json(response);
     } else {
-        res.json({valid: auth[0], message: auth[1]});
+        res.json({valid: auth["valid"], message: auth["data"]});
     }
 });
 
@@ -59,72 +59,55 @@ app.post('/register/:email/:pass', function (req,res) {
     log.event('Registering user...');
     // TODO: Create user
     let auth = authorize(req.params.email, req.params.pass);
-    if (auth[0]) {
-        let token = jwt.sign(auth[1], 'super_secret code', {expiresIn: "2 days"});
+    if (auth["data"]) {
+        let token = jwt.sign(auth["data"], 'super_secret code', {expiresIn: "7d"});
         let response = {
-            valid: auth[0],
+            valid: auth["valid"],
             token: token,
-            id: auth[1].id
+            id: auth["data"].id
         };
         res.json(response);
     } else {
-        res.json({valid: auth[0], message: auth[1]});
+        res.json({valid: auth["valid"], message: auth["data"]});
     }
 });
 
-io.use(jwtIO.authorize({
+io.on('connection', jwtIO.authorize({
     secret: 'super_secret code',
-    handshake: true
+    timeout: 30000
 }));
-
-io.on("connect", connectSocket);
+io.on('authenticated', connectSocket);
 
 function authorize(email, password) {
     // TODO: check userDb for valid login/password
-    return [
-        true,   // response from DB
-        {           // data from Db
+    return {
+        valid: true,
+        data: {
             "id": null,
             "email": email
         }
-    ];
+    };
 }
 
 function connectSocket(socket) {
-    log.event(socket.decoded_token.email +" connected.");
+    let user = {
+        id: socket.decoded_token.id,
+        email: socket.decoded_token.email,
+    }; // willl be user = users[socket.decoded_token.id]
+    log.event(user.email+" connected.");
     socket.emit(events.serverEvents, events);
-    socket.emit(events.serverUserRequest, socket.id);
-    socket.on(events.clientUserData, verifyUser);
-    socket.on(events.clientMessageSend, function (message) {
-        users[message.from].send(message);
-    });
+    socket.emit(events.serverUserData, user);
+    socket.broadcast.emit(events.serverUserConnect, user);
+    socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
     socket.on("disconnect", function () {
-        let user = findUserBySocket(socket.id);
-        log.event("User "+user.email+" disconnected");
+        log.event("User " + user.email + " disconnected");
         socket.broadcast.emit(events.serverUserDisconnect, user.data);
-        let index = find(usersOnline, "id", user.id);
-        usersOnline = usersOnline.slice(index);
+        // let index = find(usersOnline, "id", user.id);
+        // usersOnline = usersOnline.slice(index);
+
     });
 }
 
-function verifyUser(clientUser) {
-    log.event("Verifying user...");
-    let user;
-    if (typeof users[clientUser.id] !== "undefined") {
-        log.event("User verified.");
-        user = users[clientUser.id];
-    } else {
-        log.event("No user found, creating new user ", clientUser.email);
-        user = new User(send);
-        usersOnline.push(user.id);
-        users[user.id] = user;
-    }
-    user.socket = io.sockets.sockets[clientUser.socketId];
-    user.email = clientUser.email;
-    user.socket.broadcast.emit(events.serverUserConnect, user.data);
-    user.socket.emit(events.serverUserData, user.data);
-    user.socket.emit(events.serverUserList, userList());
-}
 
 function send(message){
     log.recurrent(" MSG >> " + users[message.from].email + " > " + users[message.to].email);
@@ -139,24 +122,4 @@ function userList() {
     }
     log.event("Generating new user list with " + Object.keys(list).length + " users");
     return list;
-}
-
-function findUserBySocket(socketId){
-    log.event("Attempting to find user by socket...");
-    for (let id in users){
-        if (users[id].socket.id == socketId){
-            log.event("user found");
-            return users[id];
-        }
-    }
-    log.event("user not found");
-    return null;
-}
-
-function find(array, parameter, value){
-    for (let i = 0; i < array.length; i++){
-        if (array[i][parameter] == value){
-            return i
-        }
-    }
 }

@@ -18,27 +18,35 @@ function Dom() {
         }
     }
     function build(id) {
-        if (document.getElementById(id) === null) {
+        if (document.getElementById(id) !== null) {
+            self[id] = document.getElementById(id);
+        } else if (document.getElementsByClassName(id).length > 0 ) {
+            self[id] = document.getElementsByClassName(id)[0];
+        } else {
             return false;
         }
-        self[id] = document.getElementById(id);
         self[id].tmp = {};
-        self[id].on = function (event, fn) {
-            self[id].addEventListener(event, fn);
-        }
-        self[id].hide = function() {
-            self[id].tmp.display = self[id].style.display;
-            self[id].style.display = "none";
-        }
-        self[id].show = function() {
-            self[id].style.display = self[id].tmp.display || "initial";
-        }
-        self[id].toggle = function() {
+        self[id].on = on;
+        self[id].hide = hide;
+        self[id].show = show;
+        self[id].toggle = toggle;
+
+        function toggle() {
             if (self[id].style.display == "none") {
-                self[id].show();
+                    self[id].show();
             } else {
                 self[id].hide();
             }
+        }
+        function hide() {
+            self[id].tmp.display = self[id].style.display;
+            self[id].style.display = "none";
+        }
+        function show() {
+            self[id].style.display = self[id].tmp.display || "initial";
+        }
+        function on(event, fn) {
+            self[id].addEventListener(event, fn);
         }
         return self[id];
     }
