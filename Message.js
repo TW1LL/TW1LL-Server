@@ -3,11 +3,12 @@
 let uuid = require('uuid');
 
 class Message {
-    constructor(to, from, text, type="text") {
+    constructor(to, from, text, conversationId, type="text") {
+        this.id = uuid.v1();
+        this.conversationId = conversationId;
         this.to = to;
         this.from = from;
         this.text = text;
-        this.id = uuid.v1();
         this.timestamp = Date.now();
     }
 }

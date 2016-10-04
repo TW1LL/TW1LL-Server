@@ -1,5 +1,7 @@
 "use strict";
 let db = require("sqlite3");
+let Log = require('./Log');
+let log = new Log("high");
 
 class Database {
 
@@ -10,51 +12,42 @@ class Database {
             }
         });
 
-        this.createUserTable = "CREATE TABLE IF NOT EXISTS users (id TEXT, username TEXT, email TEXT, PRIMARY KEY (id))";
-        this.createMessageTable = "CREATE TABLE IF NOT EXISTS messages (id TEXT, to_id TEXT, from_id TEXT, message_text TEXT, timestamp TEXT, PRIMARY KEY (id))";
-        this.createUserPasswordTable = "CREATE TABLE IF NOT EXISTS user_password (id TEXT, password_salt TEXT, password_hash TEXT, PRIMARY KEY (id))";
+        this.tableCreateStatements = {
+            "createUserTable": "CREATE TABLE IF NOT EXISTS users (id TEXT, username TEXT, email TEXT, PRIMARY KEY (id))",
+            "createMessageTable": "CREATE TABLE IF NOT EXISTS messages (id TEXT, conversation_id TEXT, to_id TEXT, from_id TEXT, message_text TEXT, timestamp TEXT, PRIMARY KEY (id))",
+            "createUserPasswordTable": "CREATE TABLE IF NOT EXISTS user_passwords (id TEXT, password_salt TEXT, password_hash TEXT, PRIMARY KEY (id))",
+            "createConversationsTable": "CREATE TABLE IF NOT EXISTS conversations (id TEXT, users TEXT)"
+        };
 
         this.queries = {
             "createUser": "INSERT INTO users VALUES (?, ?, ?)",
-            "createMessage": "INSERT INTO messages VALUES (?, ?, ?, ?, ?)",
+            "createMessage": "INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)",
             "getUser": "SELECT * FROM users WHERE id = ?",
             "retrieveMessage": "SELECT * FROM messages WHERE to_id = $id or from_id = $id",
-            "retrievePassword": "SELECT * FROM user_password WHERE id = ?",
-            "createNewPassword": "INSERT INTO user_password VALUES (?, ?, ?)",
-            "updatePassword": "UPDATE user_password SET password_salt = ?, password_hash = ? WHERE id = ?",
-            "findIdByEmail": "SELECT id FROM users WHERE email = ?"
+            "retrievePassword": "SELECT * FROM user_passwords WHERE id = ?",
+            "createNewPassword": "INSERT INTO user_passwords VALUES (?, ?, ?)",
+            "updatePassword": "UPDATE user_passwords SET password_salt = ?, password_hash = ? WHERE id = ?",
+            "findIdByEmail": "SELECT id FROM users WHERE email = ?",
+            "createConversation": "INSERT INTO conversations VALUES (?, ?)",
+            "retrieveConversationById": "SELECT * FROM conversations WHERE id = ?",
+            "retrieveConversationByMembers": "SELECT * FROM conversations WHERE users = ?"
         };
 
         this.prepareDB();
     }
 
     prepareDB(){
+        log.event("Preparing DB tables and queries");
         return new Promise((resolve, reject) => {
 
-            this.db.exec(this.createUserTable, function(error){
-                if (error){
-                    console.log("Error creating user table:", error);
-                }
-            });
-            this.db.exec(this.createMessageTable, function(error){
-                if (error){
-                    console.log("Error creating messages table:", error);
-                }
-            });
-            this.db.exec(this.createUserPasswordTable, function(error){
-                if(error){
-                    console.log("Error creating password table:", error);
-                }
-            });
+            for (let createStatement in this.tableCreateStatements) {
+                this.db.exec(this.tableCreateStatements[createStatement], function(error){
+                    if (error){
+                        console.log("Error creating table:", createStatement, error);
+                    }
+                });
+            }
 
-            this.prepareQueries().then(resolve);
-
-        })
-    }
-
-    // prepares all queries to speed execution time
-    prepareQueries() {
-        return new Promise((resolve, reject) => {
             let statements  = {};
             let preparedStatement = null;
             for(let query in this.queries){
@@ -73,7 +66,8 @@ class Database {
     }
 
     retrievePassword(userId) {
-        console.log("retrieving password");
+        log.recurrent("Retrieving password");
+        log.debug(userId);
         return new Promise((resolve, reject) => {
             if (userId == false) {
                 resolve(false);
@@ -82,7 +76,6 @@ class Database {
                     if (typeof row !== "undefined") {
                         resolve(row)
                     } else {
-                        console.log("error on retreiving password", err);
                         resolve(false);
                     }
                 });
@@ -91,28 +84,77 @@ class Database {
     }
 
     createNewPassword(userId, salt, hash) {
+        log.recurrent("Creating new password for " + userId);
         return new Promise((resolve, reject) => {
-            this.queries.createNewPassword.run([userId, salt, hash]);
-            resolve(true);
+            this.queries.createNewPassword.run([userId, salt, hash], (err) => {
+                log.debug(err);
+                resolve(err);
+            });
         });
     }
 
     createUser(user){
-        console.log("user id", user.id);
+        log.recurrent("Creating new user", user.name);
         return new Promise((resolve, reject) => {
             let data = [user.id, user.name, user.email];
-            resolve(this.queries.createUser.run(data))
+            this.queries.createUser.run(data, function(err) {
+                if (this.lastID) {
+                    resolve(true);
+                } else {
+                    reject(false);
+                }
+            })
         });
-
     }
 
     createMessage(message){
-        let data = [message.id, message.to, message.from, message.text, message.timestamp];
+        log.recurrent("Creating new message", message.id);
+        let data = [message.id, message.conversationId, message.to, message.from, message.text, message.timestamp];
         return this.queries["createMessage"].run(data);
     }
 
+    createConversation(id, users) {
+        return new Promise ((resolve, reject) => {
+            this.queries.createConversation.run([id, users], (err) => {
+                if (this.lastID) {
+                    resolve(true);
+                } else {
+                    reject(false);
+                }
+            })
+        })
+    }
+
+    findConversationId(users){
+        return new Promise((resolve, reject) => {
+            this.queries.retrieveConversationByMembers.get(users, (err, row) => {
+                if (row) {
+                    resolve(row)
+                } else {
+                    resolve(false)
+                }
+            })
+        })
+    }
+
+    retrieveConversationById(id) {
+        log.recurrent("Retrieving conversation " + id);
+        return new Promise ((resolve, reject) => {
+            this.queries.retrieveConversationById.get(id, (err, row) => {
+                log.debug(err);
+                log.debug(row);
+                if (row) {
+                    resolve(row);
+                } else {
+                    reject(err);
+                }
+            })
+        })
+    }
+
     findIdByEmail(email){
-        console.log("email", email);
+        log.recurrent("Finding user by email");
+        log.debug(email);
         return new Promise((resolve, reject) => {
             this.queries.findIdByEmail.get(email, (err, row) => {
                 if (typeof row !== "undefined") {
@@ -120,18 +162,19 @@ class Database {
                 } else {
                     resolve(false);
                 }
-
             });
         });
     }
 
     getUser(id){
+        log.recurrent("Getting user", id);
         return new Promise((resolve, reject) => {
             this.queries.getUser.get(id, (err, row) => {resolve(row)});
         })
     }
 
     getAllUsers() {
+        log.event("Getting all users");
         return new Promise((resolve, reject) => {
 
             this.db.all(this.queries.getAllUsers, [], (err, rows) => {resolve(rows)});

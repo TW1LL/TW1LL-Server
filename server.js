@@ -20,14 +20,15 @@ let config = {
 let usersOnline = {}, users = {};
 let events = {
     serverEvents: "server events",
-    serverUserData2 : "server user data2",
     serverUserConnect: "server user connect",
     serverUserDisconnect: "server use disconnect",
     serverUserList: "server user list",
     serverUserData: "server user data",
     serverMessageReceive: "server message receive",
+    serverConversationData: "server conversation data",
     clientMessageSend: "client message send",
-    clientUserData: "clientUserData"
+    clientUserData: "client user data",
+    clientConversationCreate: "client conversation create"
 };
 
 let db = require('./Database');
@@ -77,6 +78,8 @@ app.post('/register/:email/:pass', function (req,res) {
             auth.data = users[auth.id].data;
             auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
         }
+        log.recurrent("Authorization status " + auth.valid);
+        log.debug(auth.data);
         res.json(auth);
 
     });
@@ -105,6 +108,8 @@ function populateUsers() {
 function authorize(data) {
     return new Promise((resolve, reject) => {
         db.findIdByEmail(data.email).then(db.retrievePassword.bind(db)).then((userPWData) => {
+            log.debug("Password lookup result");
+            log.debug(userPWData);
             if (userPWData) {
                 bcrypt.compare(data.password, userPWData.password_hash, (err, res) => {
                     if (res) {
@@ -131,16 +136,35 @@ function connectSocket(socket) {
     socket.emit(events.serverUserList, usersOnline);
     socket.broadcast.emit(events.serverUserConnect, user.data);
     socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
+    socket.on(events.clientConversationCreate, createConversation);
     socket.on("disconnect", function () {
         log.event("User " + user.email + " disconnected");
         socket.broadcast.emit(events.serverUserDisconnect, user.data);
         delete usersOnline[user.id];
-
     });
 }
 
+function createConversation(createRequest){
+    let id = null;
+    db.findConversationId(createRequest.users)
+        .then((existingId) => {
+            if (existingId){
+                id = existingId;
+            } else {
+                id = uuid.v1();
+                db.createConversation(id, createRequest.users);
+            }
+            users[createRequest.userId].socket.emit(id);
+        });
+}
+
 function send(message){
-    log.recurrent(" MSG >> " + users[message.from].email + " > " + users[message.to].email);
-    let to = users[message.to];
-    to.receive(message);
+    log.message(users[message.from].email + " > " + users[message.to].email);
+    db.retrieveConversationById(message.conversationId)
+        .then((row) => {
+        for (let user in row.users){
+            user.receive(message);
+        }
+        db.createMessage(message);
+    });
 }

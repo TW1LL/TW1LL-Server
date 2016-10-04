@@ -3,7 +3,7 @@
 
     let users = {};
     let socket;
-    let events, toId;
+    let events, toConvId;
     let DOM = new Dom();
 
     addEventListener("DOMContentLoaded", ready);
@@ -87,7 +87,7 @@
                 clearUser();
 
             }
-        }
+        };
         e.preventDefault();
         return false;
     }
@@ -173,6 +173,7 @@
         localStorage["userToken"] = token;
 
     }
+    
     function clearUser() {
         localStorage.removeItem('userToken');
         localStorage["user"] = JSON.stringify({});
@@ -214,11 +215,26 @@
         let text = document.createTextNode("<" + users[message.from].email + "> " + message.text);
         li.appendChild(text);
         DOM.messageList.appendChild(li);
+        storeMessage(message);
+    }
+
+    function storeMessage(message) {
+        let allMessages = {};
+        // pull existing list of messages if there is one
+        if (typeof localStorage["messages"] !== "undefined") {
+            allMessages = JSON.parse(localStorage["messages"]);
+        }
+        // if this conversation doesn't exist yet, create it
+        if (typeof allMessages[message.from] === "undefined") {
+            allMessages[message.from] = []
+        }
+        allMessages[message.from].push(message);
+        localStorage["messages"] = JSON.stringify(allMessages);
     }
 
     function sendTo(event) {
         DOM.toBox.value = event.target.innerText;
-        toId = event.target.parentElement.id;
+        toConvId = event.target.parentElement.id;
     }
 
     function checkForEnter(event) {
@@ -226,16 +242,18 @@
             sendMsg();
         }
     }
+
     function sendMsg() {
         let message = {
-            "to": toId,
             "from": getUserData("id"),
             "text": DOM.messageBox.value,
-            "timestamp": Date.now()
+            "timestamp": Date.now(),
+            "conversationId": toConvId
         };
         socket.emit(events.clientMessageSend, message);
         DOM.messageBox.value = "";
         addMessage(message);
+        storeMessage(message);
     }
 
     function updateUserList(list) {

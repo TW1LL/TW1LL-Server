@@ -15,7 +15,9 @@ class Log {
             // events threshold
             "events": 5,
             "errors": 3,
-            "recurrent": 7
+            "recurrent": 7,
+            "message": 9,
+            "debug": 10
         };
         this.logLevel = this.levels[logLevel];
 
@@ -35,12 +37,22 @@ class Log {
     }
     recurrent(message) {
         if (this.logLevel >= this.levels["recurrent"]) {
-            console.log("EVT >>", message);
+            console.log("RECURRENT >>", message);
         }
     }
     error(message) {
         if (this.logLevel >= this.levels["errors"]) {
             console.log("ERR >>", message);
+        }
+    }
+    debug(message) {
+        if (this.logLevel >= this.levels["debug"]) {
+            console.log("DEBUG >>", message);
+        }
+    }
+    message(message) {
+        if (this.logLevel >= this.levels["message"]) {
+            console.log("MSG >>", message);
         }
     }
 }
