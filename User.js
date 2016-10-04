@@ -4,7 +4,7 @@ let uuid = require('uuid');
 let Message = require('./Message');
 class User {
 
-    constructor(send) {
+    constructor(send, data) {
         this._id = uuid.v1(); // underscore infers private
         this.public = {
             id: this._id,
@@ -14,6 +14,11 @@ class User {
         this.messages = [];
         this.socket = null;
         this.sendCallback = send;
+
+        if(typeof data !== "undefined") {
+            this._id = data.id;
+            this.public = data;
+        }
     }
 
     send(message) {
@@ -25,6 +30,7 @@ class User {
         this.messages.push(newMessage);
         this.socket.emit("server message receive", newMessage);
     }
+
 
     get id() {
         return this._id;

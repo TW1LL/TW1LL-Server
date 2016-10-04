@@ -67,7 +67,7 @@ class Database {
                 statements[query] = preparedStatement;
             }
             this.queries = statements;
-
+            this.queries.getAllUsers = "SELECT * FROM users";
             resolve();
         })
     }
@@ -75,22 +75,25 @@ class Database {
     retrievePassword(userId) {
         console.log("retrieving password");
         return new Promise((resolve, reject) => {
-            this.queries.retrievePassword.get(userId, function (err, row) {
-                console.log(userId);
-                if (typeof row !== "undefined") {
-                    console.log("password data", row);
-                    resolve(row)
-                } else {
-                    console.log("error", err);
-                    resolve(false)
-                }
-            });
+            if (userId == false) {
+                resolve(false);
+            } else {
+                this.queries.retrievePassword.get(userId, function (err, row) {
+                    if (typeof row !== "undefined") {
+                        resolve(row)
+                    } else {
+                        console.log("error on retreiving password", err);
+                        resolve(false);
+                    }
+                });
+            }
         })
     }
 
     createNewPassword(userId, salt, hash) {
         return new Promise((resolve, reject) => {
-            this.queries.createNewPassword.run([userId, salt, hash])
+            this.queries.createNewPassword.run([userId, salt, hash]);
+            resolve(true);
         });
     }
 
@@ -111,13 +114,27 @@ class Database {
     findIdByEmail(email){
         console.log("email", email);
         return new Promise((resolve, reject) => {
-            this.queries.findIdByEmail.get(email, (err, row) => {resolve(row.id)});
+            this.queries.findIdByEmail.get(email, (err, row) => {
+                if (typeof row !== "undefined") {
+                    resolve(row.id);
+                } else {
+                    resolve(false);
+                }
+
+            });
         });
     }
 
     getUser(id){
         return new Promise((resolve, reject) => {
             this.queries.getUser.get(id, (err, row) => {resolve(row)});
+        })
+    }
+
+    getAllUsers() {
+        return new Promise((resolve, reject) => {
+
+            this.db.all(this.queries.getAllUsers, [], (err, rows) => {resolve(rows)});
         })
     }
 }

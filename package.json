@@ -4,6 +4,7 @@
   "description": "Server for chrome messaging extension.",
   "repository": "https://github.com/TW1LL/Tw1ll-Server.git",
   "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
     "express": "^4.14.0",
     "jsonwebtoken": "^7.1.9",
     "socket.io": "^1.4.8",

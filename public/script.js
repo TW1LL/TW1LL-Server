@@ -25,7 +25,6 @@
         socket.on("unauthorized", unauthorized);
     }
     function authorized() {
-        console.log('user authorized! at ' + Date.now());
         DOM.loginForm.hide();
         DOM.userInfo.show();
         socket.on("server events", init);
@@ -38,9 +37,7 @@
 
     }
     function init(eventList) {
-        console.log('User connected');
         events = eventList;
-        socket.on(events.serverUserData2, assignUser);
         socket.on(events.serverUserConnect, addUser);
         socket.on(events.serverUserList, updateUserList);
         socket.on(events.serverUserDisconnect, removeUser);
@@ -64,6 +61,7 @@
         http.onload = function() {
             let res = JSON.parse(this.response);
             if (res.valid) {
+                setUser(res.data);
                 setUserToken(res.token);
                 connect();
             } else {
@@ -79,6 +77,7 @@
         http.onload = function() {
             let res = JSON.parse(this.response);
             if (res.valid) {
+                setUser(res.data)
                 setUserToken(res.token);
                 connect();
             } else {
@@ -127,6 +126,7 @@
     }
 
     function serverUserData(userData) {
+
         setUser(userData);
         let el = DOM.find(userData.id) || addUser(userData);
         el.innerHTML = '<a href="#" class="user">' + userData.email + '</a>';
@@ -159,7 +159,7 @@
 
     function sendTo(event) {
         DOM.toBox.value = event.target.innerText;
-        toId = on.target.parentElement.id;
+        toId = event.target.parentElement.id;
     }
 
     function checkForEnter(event) {

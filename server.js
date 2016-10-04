@@ -14,8 +14,10 @@ let Log = require('./Log');
 let User = require('./User');
 let Message = require('./Message');
 let db = require('./Database');
-let usersOnline = [], users = {};
-let bcrypt = require('bcrypt');
+let usersOnline = {}, users = {};
+let bcrypt = require('bcrypt-nodejs');
+
+
 
 let config = {
     serverPort: 443,
@@ -34,58 +36,57 @@ let events = {
     clientUserData: "clientUserData"
 };
 
+
 app.use(express.static(__dirname + '/public'));
 
-http.listen(config.serverPort, function() {
-    log.event('HTTPS server started. Listening on port ' + config.serverPort);
+populateUsers().then(() => {
+    http.listen(config.serverPort, function() {
+        log.event('HTTPS server started. Listening on port ' + config.serverPort);
+    });
 });
+
+
+
 
 app.post('/login/:email/:pass', function (req,res) {
     log.event('Authorizing user...');
-    let auth = authorize(req.params.email, req.params.pass);
-    if (auth["valid"]) {
-        let token = jwt.sign(auth["data"], 'super_secret code', {expiresIn: "7d"});
-        let response = {
-            valid: auth["valid"],
-            token: token,
-            id: auth["data"].id
-        };
-        res.json(response);
-    } else {
-        res.json({valid: auth["valid"], message: auth["data"]});
-    }
+
+    authorize({email: req.params.email, password: req.params.pass}).then((auth) => {
+        if (auth.valid) {
+            auth.data = users[auth.id].data;
+            auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
+
+        }
+        res.json(auth);
+    });
 });
 
 app.post('/register/:email/:pass', function (req,res) {
-    console.log(req.params);
     log.event('Registering user...');
-    let createUser = new Promise((resolve, reject) => {
+    new Promise((resolve, reject) => {
         bcrypt.genSalt(10, function (err, salt) {
-            bcrypt.hash(req.params.pass, salt, function (err, hash) {
+            bcrypt.hash(req.params.pass, salt, null, function (err, hash) {
                 let user = new User(send);
                 user.email = req.params.email;
                 db.createUser(user).then(() => {
-                    db.createNewPassword(user.id, salt, hash)
+                    db.createNewPassword(user.id, salt, hash).then(() => {
+                        users[user.id] = user;
+                        resolve({email: req.params.email, password: req.params.pass});
+                    });
                 });
-                let data = {email: req.params.email, password: req.params.pass};
-                resolve(data);
+
             });
         });
-    });
-
-    createUser.then(authorize).then(function(auth){
-        console.log("auth", auth);
-        if (auth[0]) {
-            let token = jwt.sign(auth[1], 'super_secret code', {expiresIn: "2 days"});
-            let response = {
-                valid: auth[0],
-                token: token,
-                id: auth[1].id
-            };
-            res.json(response);
-        } else {
-            res.json({valid: auth[0], message: auth[1]});
+    })
+    .then(authorize)
+    .then((auth) => {
+        if (auth.valid) {
+            auth.data = users[auth.id].data;
+            auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
         }
+        console.log(auth);
+        res.json(auth);
+
     });
 });
 
@@ -95,16 +96,28 @@ io.on('connection', jwtIO.authorize({
 }));
 io.on('authenticated', connectSocket);
 
-io.on("connect", connectSocket);
+
+function populateUsers() {
+    return new Promise ((res, rej) => {
+        db.getAllUsers().then((userList) => {
+            userList.forEach((data) => {
+                let user = new User(send, data);
+                users[user.id] = user;
+
+            });
+            res();
+        });
+    });
+}
 
 function authorize(data) {
     return new Promise((resolve, reject) => {
         db.findIdByEmail(data.email).then(db.retrievePassword.bind(db)).then((userPWData) => {
             if (userPWData) {
                 bcrypt.compare(data.password, userPWData.password_hash, (err, res) => {
-                    console.log(err, res);
                     if (res) {
-                            resolve({valid: true, id: userPWData.id})
+                        log.event("User authorized");
+                        resolve({valid: true, id: userPWData.id})
                     } else {
                         resolve({valid: false, data: "Password doesn't match."})
                     }
@@ -117,20 +130,19 @@ function authorize(data) {
 }
 
 function connectSocket(socket) {
-    let user = {
-        id: socket.decoded_token.id,
-        email: socket.decoded_token.email,
-    }; // willl be user = users[socket.decoded_token.id]
+    let user = users[socket.decoded_token.id];
+    usersOnline[user.id] = user.data;
+    user.socket = socket;
     log.event(user.email+" connected.");
     socket.emit(events.serverEvents, events);
-    socket.emit(events.serverUserData, user);
-    socket.broadcast.emit(events.serverUserConnect, user);
+    socket.emit(events.serverUserData, user.data);
+    socket.emit(events.serverUserList, usersOnline);
+    socket.broadcast.emit(events.serverUserConnect, user.data);
     socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
     socket.on("disconnect", function () {
         log.event("User " + user.email + " disconnected");
         socket.broadcast.emit(events.serverUserDisconnect, user.data);
-        // let index = find(usersOnline, "id", user.id);
-        // usersOnline = usersOnline.slice(index);
+        delete usersOnline[user.id];
 
     });
 }
@@ -140,13 +152,4 @@ function send(message){
     log.recurrent(" MSG >> " + users[message.from].email + " > " + users[message.to].email);
     let to = users[message.to];
     to.receive(message);
-}
-
-function userList() {
-    var list = {};
-    for(let user in usersOnline) {
-        list[usersOnline[user]] = users[usersOnline[user]].data;
-    }
-    log.event("Generating new user list with " + Object.keys(list).length + " users");
-    return list;
 }
