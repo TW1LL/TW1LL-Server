@@ -114,6 +114,12 @@ class Database {
             this.queries.findIdByEmail.get(email, (err, row) => {resolve(row.id)});
         });
     }
+
+    getUser(id){
+        return new Promise((resolve, reject) => {
+            this.queries.getUser.get(id, (err, row) => {resolve(row)});
+        })
+    }
 }
 
 module.exports = new Database();

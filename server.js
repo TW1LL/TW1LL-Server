@@ -98,15 +98,13 @@ io.on('authenticated', connectSocket);
 io.on("connect", connectSocket);
 
 function authorize(data) {
-    console.log(data);
     return new Promise((resolve, reject) => {
-        db.findIdByEmail(data.email).then(db.retrievePassword.bind(db)).then((userPassword) => {
-            if (userPassword) {
-                console.log(data.password);
-                bcrypt.compare(data.password, userPassword.password_hash, (err, res) => {
+        db.findIdByEmail(data.email).then(db.retrievePassword.bind(db)).then((userPWData) => {
+            if (userPWData) {
+                bcrypt.compare(data.password, userPWData.password_hash, (err, res) => {
                     console.log(err, res);
                     if (res) {
-                        resolve({valid: true, data: user.public_data});
+                            resolve({valid: true, id: userPWData.id})
                     } else {
                         resolve({valid: false, data: "Password doesn't match."})
                     }
