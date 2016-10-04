@@ -67,7 +67,7 @@
                 setUserToken(res.token);
                 connect();
             } else {
-                sendError(res.message);
+                sendError(res.data);
             }
         }
     }
@@ -82,7 +82,7 @@
                 setUserToken(res.token);
                 connect();
             } else {
-                sendError(res.message);
+                sendError(res.data);
             }
         }
     }

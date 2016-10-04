@@ -1,79 +1,119 @@
 "use strict";
-let sqlite3 = require("sqlite3").verbose();
+let db = require("sqlite3");
 
 class Database {
 
     constructor() {
-        this.db = new sqlite3.Database(":memory:", sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function (error) {
+        this.db = new db.Database("tw1ll.sqlite3", db.OPEN_READWRITE | db.OPEN_CREATE, function (error) {
             if (error) {
-                console.log("Error opening database:", error);
+                console.log("Error opening database:", error)
             }
         });
 
-        let createUserTable = "CREATE TABLE IF NOT EXISTS users (id TEXT, username TEXT, PRIMARY KEY (id))";
-        let createMessageTable = "CREATE TABLE IF NOT EXISTS messages (id TEXT, to_id TEXT, from_id TEXT, message_text TEXT, " +
-            "timestamp TEXT, PRIMARY KEY (id))";
+        this.createUserTable = "CREATE TABLE IF NOT EXISTS users (id TEXT, username TEXT, email TEXT, PRIMARY KEY (id))";
+        this.createMessageTable = "CREATE TABLE IF NOT EXISTS messages (id TEXT, to_id TEXT, from_id TEXT, message_text TEXT, timestamp TEXT, PRIMARY KEY (id))";
+        this.createUserPasswordTable = "CREATE TABLE IF NOT EXISTS user_password (id TEXT, password_salt TEXT, password_hash TEXT, PRIMARY KEY (id))";
 
-        this.db.exec(createUserTable, function(error){
-            if (error){
-                console.log("Error creating user table:", error);
-            }
-            });
-        this.db.exec(createMessageTable, function(error){
-            if (error){
-                console.log("Error creating messages table:", error);
-            }
-        });
-
-        let setUserQuery = "INSERT INTO users VALUES (?, ?)";
-        let setMessageQuery = "INSERT INTO messages VALUES (?, ?, ?, ?, ?)";
-        let getUserQuery = "SELECT * FROM users WHERE id = ?";
-        let getMessageQuery = "SELECT * FROM messages WHERE to_id = $id or from_id = $id";
-
-        let queries = {
-            "setUser": setUserQuery,
-            "setMessage": setMessageQuery,
-            "getUser": getUserQuery,
-            "getMessage": getMessageQuery
+        this.queries = {
+            "createUser": "INSERT INTO users VALUES (?, ?, ?)",
+            "createMessage": "INSERT INTO messages VALUES (?, ?, ?, ?, ?)",
+            "getUser": "SELECT * FROM users WHERE id = ?",
+            "retrieveMessage": "SELECT * FROM messages WHERE to_id = $id or from_id = $id",
+            "retrievePassword": "SELECT * FROM user_password WHERE id = ?",
+            "createNewPassword": "INSERT INTO user_password VALUES (?, ?, ?)",
+            "updatePassword": "UPDATE user_password SET password_salt = ?, password_hash = ? WHERE id = ?",
+            "findIdByEmail": "SELECT id FROM users WHERE email = ?"
         };
-        this.queries = prepareQueries(this.db, queries);
 
+        this.prepareDB();
     }
 
+    prepareDB(){
+        return new Promise((resolve, reject) => {
 
+            this.db.exec(this.createUserTable, function(error){
+                if (error){
+                    console.log("Error creating user table:", error);
+                }
+            });
+            this.db.exec(this.createMessageTable, function(error){
+                if (error){
+                    console.log("Error creating messages table:", error);
+                }
+            });
+            this.db.exec(this.createUserPasswordTable, function(error){
+                if(error){
+                    console.log("Error creating password table:", error);
+                }
+            });
 
-    getUser(id){
-        return this.queries["getUser"].get(id);
+            this.prepareQueries().then(resolve);
+
+        })
     }
 
-    getMessage(id){
-        return this.queries["getMessage"].get(id);
+    // prepares all queries to speed execution time
+    prepareQueries() {
+        return new Promise((resolve, reject) => {
+            let statements  = {};
+            let preparedStatement = null;
+            for(let query in this.queries){
+                let queryText = this.queries[query];
+                preparedStatement = this.db.prepare(queryText, null, function(error){
+                    if (error){
+                        console.log("error preparing query", query, error);
+                    }
+                });
+                statements[query] = preparedStatement;
+            }
+            this.queries = statements;
+
+            resolve();
+        })
+    }
+
+    retrievePassword(userId) {
+        console.log("retrieving password");
+        return new Promise((resolve, reject) => {
+            this.queries.retrievePassword.get(userId, function (err, row) {
+                console.log(userId);
+                if (typeof row !== "undefined") {
+                    console.log("password data", row);
+                    resolve(row)
+                } else {
+                    console.log("error", err);
+                    resolve(false)
+                }
+            });
+        })
+    }
+
+    createNewPassword(userId, salt, hash) {
+        return new Promise((resolve, reject) => {
+            this.queries.createNewPassword.run([userId, salt, hash])
+        });
     }
 
     createUser(user){
-        let data = [user.id, user.name];
-        return this.queries["setUser"].run(data);
+        console.log("user id", user.id);
+        return new Promise((resolve, reject) => {
+            let data = [user.id, user.name, user.email];
+            resolve(this.queries.createUser.run(data))
+        });
+
     }
 
     createMessage(message){
         let data = [message.id, message.to, message.from, message.text, message.timestamp];
-        return this.queries["setMessage"].run(data);
+        return this.queries["createMessage"].run(data);
     }
-}
 
-// sets up the queries specified as prepared statements in sql, returns the statements with their original label
-function prepareQueries(db, queries){
-    let statements  = {};
-    for(let query in queries){
-        let queryText = queries[query];
-        let preparedStatement = db.prepare(queryText, null, function(error){
-            if (error){
-                console.log("error preparing query", query, error);
-            }
+    findIdByEmail(email){
+        console.log("email", email);
+        return new Promise((resolve, reject) => {
+            this.queries.findIdByEmail.get(email, (err, row) => {resolve(row.id)});
         });
-        statements[query] = preparedStatement;
     }
-    return statements;
 }
 
 module.exports = new Database();

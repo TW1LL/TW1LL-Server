@@ -15,10 +15,11 @@ let User = require('./User');
 let Message = require('./Message');
 let db = require('./Database');
 let usersOnline = [], users = {};
+let bcrypt = require('bcrypt');
 
 let config = {
     serverPort: 443,
-    logLevel: "high",
+    logLevel: "high"
 };
 let log = new Log(config.logLevel);
 let events = {
@@ -56,20 +57,36 @@ app.post('/login/:email/:pass', function (req,res) {
 });
 
 app.post('/register/:email/:pass', function (req,res) {
+    console.log(req.params);
     log.event('Registering user...');
-    // TODO: Create user
-    let auth = authorize(req.params.email, req.params.pass);
-    if (auth["data"]) {
-        let token = jwt.sign(auth["data"], 'super_secret code', {expiresIn: "7d"});
-        let response = {
-            valid: auth["valid"],
-            token: token,
-            id: auth["data"].id
-        };
-        res.json(response);
-    } else {
-        res.json({valid: auth["valid"], message: auth["data"]});
-    }
+    let createUser = new Promise((resolve, reject) => {
+        bcrypt.genSalt(10, function (err, salt) {
+            bcrypt.hash(req.params.pass, salt, function (err, hash) {
+                let user = new User(send);
+                user.email = req.params.email;
+                db.createUser(user).then(() => {
+                    db.createNewPassword(user.id, salt, hash)
+                });
+                let data = {email: req.params.email, password: req.params.pass};
+                resolve(data);
+            });
+        });
+    });
+
+    createUser.then(authorize).then(function(auth){
+        console.log("auth", auth);
+        if (auth[0]) {
+            let token = jwt.sign(auth[1], 'super_secret code', {expiresIn: "2 days"});
+            let response = {
+                valid: auth[0],
+                token: token,
+                id: auth[1].id
+            };
+            res.json(response);
+        } else {
+            res.json({valid: auth[0], message: auth[1]});
+        }
+    });
 });
 
 io.on('connection', jwtIO.authorize({
@@ -78,15 +95,27 @@ io.on('connection', jwtIO.authorize({
 }));
 io.on('authenticated', connectSocket);
 
-function authorize(email, password) {
-    // TODO: check userDb for valid login/password
-    return {
-        valid: true,
-        data: {
-            "id": null,
-            "email": email
-        }
-    };
+io.on("connect", connectSocket);
+
+function authorize(data) {
+    console.log(data);
+    return new Promise((resolve, reject) => {
+        db.findIdByEmail(data.email).then(db.retrievePassword.bind(db)).then((userPassword) => {
+            if (userPassword) {
+                console.log(data.password);
+                bcrypt.compare(data.password, userPassword.password_hash, (err, res) => {
+                    console.log(err, res);
+                    if (res) {
+                        resolve({valid: true, data: user.public_data});
+                    } else {
+                        resolve({valid: false, data: "Password doesn't match."})
+                    }
+                });
+            } else {
+                resolve({valid: false, data: "User not found."});
+            }
+        });
+    })
 }
 
 function connectSocket(socket) {
