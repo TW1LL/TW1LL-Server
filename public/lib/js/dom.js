@@ -4,7 +4,7 @@ function Dom() {
     var self = this;
     self.find = find;
     self.batchFind = batchFind;
-
+    self.modal = new modal(self);
     function find(id) {
         if (typeof self[id] === "undefined") {
             return build(id);
@@ -51,6 +51,23 @@ function Dom() {
         return self[id];
     }
 
+    function modal() {
+        var mdl = this;
+        mdl.init = function() {
+            self.find("Modal");
+            mdl.close();
+            self.find("modal-close").on("click", mdl.close);
+            self.find("modal-close-X").on("click", mdl.close);
+        };
+        mdl.close = function() {
+            self["Modal"].hide();
+        };
+        mdl.open = function() {
+            self["Modal"].show();
+        };
+
+        return mdl;
+    }
 
     return self;
 }

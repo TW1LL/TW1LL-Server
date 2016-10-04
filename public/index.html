@@ -4,21 +4,23 @@
     <meta charset="UTF-8">
     <title>TW1LL-MSG</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="style.css" rel="stylesheet" type="text/css">
-    <link rel="shortcut icon" href="icon.png" type="image/png">
-    <link rel="icon" href="icon.png" type="image/png">
+    <link href="lib/css/style.css" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="images/icon.png" type="image/png">
+    <link rel="icon" href="images/icon.png" type="image/png">
 </head>
 <body>
     <div id="wrapper">
         <div id="header">
-            <span class="header">TW1LL MSG</span>
-            <div id="loginForm">
-                <input type="text" name="email" id="loginEmail" />
-                <input type="password" name="password" id="loginPassword" />
-                <button id="loginSubmit">Login</button><button id="registerSubmit">Register</button>
-            </div>
+            <div class="title">TW1LL MSG</div>
             <div id="userInfo">
-
+                <a href="#" id="userInfoLink">Login / Register</a>
+            </div>
+            <div id="userInfoDropdown">
+                <ul>
+                    <li><a href="#">Account</a></li>
+                    <li><a href="#">Settings</a></li>
+                    <li><a href="#" id="userLogout">Logout</a></li>
+                </ul>
             </div>
         </div>
         <div id="content">
@@ -39,8 +41,61 @@
         </div>
     </div>
 
+    <div class="modal" id="Modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Login or Register</h3>
+                <a href="#" id="modal-close-X">X</a>
+            </div>
+            <div class="modal-body">
+                    <div>
+                        <h4>Login</h4>
+                        <form>
+                            <p>
+                                <label for="email">Email</label>
+                                <input type="text" name="email" id="loginEmail" />
+                            </p>
+                            <p>
+                                <label for="password">Password</label>
+                                <input type="password" name="password" id="loginPassword" />
+                            </p>
+                            <p>
+                                <button id="loginSubmit">Login</button>
+                            </p>
+                        </form>
+
+                    </div>
+                    <div>
+                        <div><h4>New user? Register here</h4></div>
+                        <form>
+                            <p>
+                                <label for="email">Email</label>
+                                <input type="text" name="email" id="registerEmail" />
+                            </p>
+                            <p>
+                                <label for="password">Password</label>
+                                <input type="password" name="password" id="registerPassword" />
+                            </p>
+                            <p>
+                                <label for="password2">Repeat PW</label>
+                                <input type="password" name="password2" id="registerPassword2" />
+                            </p>
+                            <p>
+                                <button id="registerSubmit">Register</button> <span id="registerError"></span>
+                            </p>
+                        </form>
+                    </div>
+
+
+            </div>
+            <div class="modal-footer">
+                <button id="modal-close">Close</button>
+            </div>
+        </div>
+
+    </div>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="dom.js"></script>
-    <script src="script.js"></script>
+    <script src="lib/js/dom.js"></script>
+    <script src="lib/js/script.js"></script>
 </body>
 </html>

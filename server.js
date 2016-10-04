@@ -1,5 +1,6 @@
 "use strict";
 let fs = require('fs');
+let bcrypt = require('bcrypt-nodejs');
 let express = require('express');
 let app = express();
 let jwt = require('jsonwebtoken');
@@ -10,20 +11,13 @@ let options = {
 };
 let http = require('https').createServer(options, app);
 let io = require('socket.io')(http);
-let Log = require('./Log');
-let User = require('./User');
-let Message = require('./Message');
-let db = require('./Database');
-let usersOnline = {}, users = {};
-let bcrypt = require('bcrypt-nodejs');
-
-
+let Log = require('./Log'), User = require('./User'), Message = require('./Message');
 
 let config = {
     serverPort: 443,
     logLevel: "high"
 };
-let log = new Log(config.logLevel);
+let usersOnline = {}, users = {};
 let events = {
     serverEvents: "server events",
     serverUserData2 : "server user data2",
@@ -36,17 +30,16 @@ let events = {
     clientUserData: "clientUserData"
 };
 
+let db = require('./Database');
+let log = new Log(config.logLevel);
 
-app.use(express.static(__dirname + '/public'));
-
-populateUsers().then(() => {
-    http.listen(config.serverPort, function() {
-        log.event('HTTPS server started. Listening on port ' + config.serverPort);
-    });
+http.listen(config.serverPort, function() {
+    log.event('HTTPS server started. Listening on port ' + config.serverPort);
+    populateUsers();
 });
 
 
-
+app.use(express.static(__dirname + '/public'));
 
 app.post('/login/:email/:pass', function (req,res) {
     log.event('Authorizing user...');
@@ -55,7 +48,7 @@ app.post('/login/:email/:pass', function (req,res) {
         if (auth.valid) {
             auth.data = users[auth.id].data;
             auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
-
+            log.event('Authorization successful.');
         }
         res.json(auth);
     });
@@ -84,7 +77,6 @@ app.post('/register/:email/:pass', function (req,res) {
             auth.data = users[auth.id].data;
             auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
         }
-        console.log(auth);
         res.json(auth);
 
     });
@@ -94,8 +86,8 @@ io.on('connection', jwtIO.authorize({
     secret: 'super_secret code',
     timeout: 30000
 }));
-io.on('authenticated', connectSocket);
 
+io.on('authenticated', connectSocket);
 
 function populateUsers() {
     return new Promise ((res, rej) => {
@@ -146,7 +138,6 @@ function connectSocket(socket) {
 
     });
 }
-
 
 function send(message){
     log.recurrent(" MSG >> " + users[message.from].email + " > " + users[message.to].email);
