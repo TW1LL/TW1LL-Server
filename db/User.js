@@ -1,3 +1,5 @@
+"use strict";
+
 let Log = require('./../Log');
 let log = new Log("high");
 let bcrypt = require('bcrypt-nodejs');
@@ -6,6 +8,18 @@ class User {
 
     constructor(context) {
         this.context = context;
+    }
+
+    saveFriends(user) {
+        return new Promise((resolve, reject) => {
+            this.context.queries.saveFriends.run([user.friends, user.id], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(true);
+                }
+            })
+        })
     }
 
     getPassword(userId) {

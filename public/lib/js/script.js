@@ -52,7 +52,7 @@
     }
     function init(eventList) {
         events = eventList;
-        socket.emit(events.clientConversationSync, getConversations());
+        socket.emit(events.clientConversationSync, [getUserData(), getConversations()]);
         //socket.on(events.serverUserConnect, addUser);
         socket.on(events.serverUserList, updateUserList);
         socket.on(events.serverUserDisconnect, removeUser);

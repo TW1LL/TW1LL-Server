@@ -1,3 +1,5 @@
+"use strict";
+
 let Log = require('./../Log');
 let log = new Log("high");
 
@@ -12,7 +14,7 @@ class Conversation {
         log.debug(id);
         log.debug(users);
         return new Promise ((resolve, reject) => {
-            this.context.queries.createConversation.run([id, users, name], (err) => {
+            this.context.queries.createConversation.run([id, users, name], function(err){
                 if (this.lastID) {
                     resolve(true);
                 } else {
@@ -22,7 +24,7 @@ class Conversation {
         })
     }
 
-    findId(users){
+    findIdByMembers(users){
         log.recurrent("Retrieving conversation by users" );
         log.debug(users);
         return new Promise((resolve) => {
@@ -44,6 +46,28 @@ class Conversation {
                 log.debug(row);
                 if (row) {
                     resolve(new Conversation(row.members, row.name, row.id));
+                } else {
+                    reject(err);
+                }
+            })
+        })
+    }
+
+    getList(ids){
+        log.recurrent("Retrieving conversations " + ids);
+        let idString = "'" + ids.join("', '") + "'";
+        console.log(idString);
+        return new Promise ((resolve, reject) => {
+            this.context.queries.retrieveConversationByIdList.all(idString, function(err, rows) {
+                log.debug(this);
+                log.debug(err);
+                log.debug(rows);
+                if(rows) {
+                    let conversations = {};
+                    for (data in rows){
+                        conversations[data.id] = rows[data];
+                    }
+                    resolve(conversations);
                 } else {
                     reject(err);
                 }

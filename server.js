@@ -110,8 +110,7 @@ function connectSocket(socket) {
     socket.on(events.clientConversationSync, syncConversations);
     socket.on(events.clientUserFriendAdd, addFriends);
     socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
-    socket.on(events.clientConversationCreate, createConversation);
-
+    socket.on(events.clientConversationCreate, createConversation);)
     socket.on("disconnect", function () {
         log.event("User " + user.email + " disconnected");
         socket.broadcast.emit(events.serverUserDisconnect, user.data);
@@ -121,7 +120,7 @@ function connectSocket(socket) {
 
 function createConversation(conversationRequest){
     let conversation = null;
-    db.Conversation.findId(conversationRequest.users)
+    db.Conversation.findIdByMembers(conversationRequest.users)
         .then((existingId) => {
             if (existingId){
                 conversation = db.Conversation.getById(existingId);
@@ -181,4 +180,25 @@ function addFriends(data){
         }
     });
     user.socket.emit(events.serverUserFriendsList, createFriendsList(user));
+}
+
+function syncConversations(conversations) {
+    let userId = conversations[0];
+    let clientConversations = conversations[1];
+    // get conversations from
+    let serverConversations = users[userId].conversations;
+    let missingConversations = {};
+    for (let conversationId in serverConversations) {
+        if (conversationId in clientConversations) {
+            let clientMessages = clientConversations[conversationId];
+            for (let message in serverConversations[conversationId]){
+                if (!clientMessages.contains(message)){
+                    missingConversations[conversationId] = serverConversations[conversationId];
+                    break;
+                }
+            }
+        } else {
+            missingConversations[conversationId] = serverConversations[conversationId];
+        }
+    }
 }

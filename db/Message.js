@@ -1,3 +1,5 @@
+"use strict";
+
 let Log = require('./../Log');
 let log = new Log("high");
 

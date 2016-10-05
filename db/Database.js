@@ -1,4 +1,6 @@
 "use strict";
+
+let uuid = require('uuid');
 let db = require("sqlite3");
 let Log = require('./../Log');
 let log = new Log("high");
@@ -23,17 +25,22 @@ class Database {
         };
 
         this.queries = {
+            // user queries
             "createUser": "INSERT INTO users VALUES (?, ?, ?, ?, ?)",
-            "createMessage": "INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)",
             "getUser": "SELECT * FROM users WHERE id = ?",
-            "retrieveMessage": "SELECT * FROM messages WHERE to_id = $id or from_id = $id",
+            "findIdByEmail": "SELECT id FROM users WHERE email = ?",
             "retrievePassword": "SELECT * FROM user_passwords WHERE id = ?",
             "createNewPassword": "INSERT INTO user_passwords VALUES (?, ?, ?)",
             "updatePassword": "UPDATE user_passwords SET password_salt = ?, password_hash = ? WHERE id = ?",
-            "findIdByEmail": "SELECT id FROM users WHERE email = ?",
+            "saveFriends": "UPDATE users SET friends = ? WHERE id = ?",
+            // message queries
+            "createMessage": "INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)",
+            "retrieveMessage": "SELECT * FROM messages WHERE to_id = $id or from_id = $id",
             "createConversation": "INSERT INTO conversations VALUES (?, ?, ?)",
+            // conversation queries
             "retrieveConversationById": "SELECT * FROM conversations WHERE id = ?",
-            "retrieveConversationByMembers": "SELECT * FROM conversations WHERE members = ?"
+            "retrieveConversationByMembers": "SELECT * FROM conversations WHERE members = ?",
+            "retrieveConversationByIdList": "SELECT * FROM conversations WHERE id IN ( ? );"
         };
 
         this.prepareDB();
