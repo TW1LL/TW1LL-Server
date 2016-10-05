@@ -38,7 +38,7 @@ class Conversation {
         })
     }
 
-    getById(id) {
+    get(id) {
         log.recurrent("Retrieving conversation " + id);
         return new Promise ((resolve, reject) => {
             this.context.queries.retrieveConversationById.get(id, (err, row) => {
@@ -64,7 +64,7 @@ class Conversation {
                 log.debug(rows);
                 if(rows) {
                     let conversations = {};
-                    for (data in rows){
+                    for (let data in rows){
                         conversations[data.id] = rows[data];
                     }
                     resolve(conversations);

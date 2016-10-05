@@ -6,6 +6,7 @@ function Dom() {
     self.batchFind = batchFind;
     self.modal = new modal(self);
     self.addFriend = addFriend;
+    self.getFriendsList = getFriendsList;
     function find(id) {
         if (typeof self[id] === "undefined") {
             return build(id);
@@ -80,18 +81,29 @@ function Dom() {
             },
             "findFriendsModal": {
                 "title": "Find your friends"
-            }
+            },
         };
         return mdl;
     }
 
-    function addFriend(userData, sendTo) {
+    function addFriend(userData, sendTo, where) {
+        self.friends =  self.friends || [];
         let li = document.createElement("li");
-        li.setAttribute("id", userData.id);
+        li.setAttribute("data-userId", userData.id);
         li.innerHTML = '<a href="#">' + userData.email + '</a>';
-        self.friendList.appendChild(li);
         li.addEventListener("click", sendTo);
+        if(typeof where === "undefined") {
+            self.friendList.appendChild(li);
+        } else {
+            self[where].appendChild(li);
+        }
+        self.friends.push(userData);
+
     }
+    function getFriendsList() {
+        return self.friends;
+    }
+
     function createConversation(conv) {
         let li = document.createElement("li");
         li.setAttribute("id", conv.id);

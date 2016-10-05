@@ -15,7 +15,8 @@
                 "loginSubmit", "loginEmail", "loginPassword",
                 "registerSubmit", "registerEmail", "registerPassword", "registerPassword2", "registerError",
                 "userInfo", "userInfoDropdown", "userInfoLink",
-                "userLogout"
+                "userLogout",
+                "body-title", "body-text"
             ]);
         DOM.modal.init();
         DOM.userInfoDropdown.hide();
@@ -215,6 +216,9 @@
     }
 
     function newSingleConversation(e) {
+        DOM["body-title"].innerText = 'Start a new conversation';
+        updateFriendsList(DOM.getFriendsList(), "messageList");
+
         console.log(e.target.id);
         let data = {
             userId: getUserData("id"),
@@ -335,10 +339,10 @@
         socket.emit(events.clientUserFriendAdd, data);
     }
 
-    function updateFriendsList(friends) {
+    function updateFriendsList(friends, where) {
         setUserData("friends", friends);
         for (let i in friends) {
-            DOM.addFriend(friends[i], sendTo);
+            DOM.addFriend(friends[i], sendTo, where);
         }
 
     }

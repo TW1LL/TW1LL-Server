@@ -90,9 +90,11 @@ function populateUsers() {
     return new Promise ((resolve) => {
         db.User.getAll().then((userList) => {
             userList.forEach((data) => {
-                let user = new User(send, data);
-                users[user.id] = user;
-
+                db.Conversation.getList(data.conversations).then(function(convs) {
+                    data.conversations = convs;
+                    let user = new User(send, data);
+                    users[user.id] = user;
+                });
             });
             resolve();
         });
@@ -110,7 +112,7 @@ function connectSocket(socket) {
     socket.on(events.clientConversationSync, syncConversations);
     socket.on(events.clientUserFriendAdd, addFriends);
     socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
-    socket.on(events.clientConversationCreate, createConversation);)
+    socket.on(events.clientConversationCreate, createConversation);
     socket.on("disconnect", function () {
         log.event("User " + user.email + " disconnected");
         socket.broadcast.emit(events.serverUserDisconnect, user.data);

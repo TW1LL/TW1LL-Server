@@ -4,26 +4,28 @@ let uuid = require('uuid');
 let Message = require('./Message');
 class User {
 
-    constructor(send, data) {
+    constructor(send,  data) {
         this._id = uuid.v1(); // underscore infers private
         this.public = {
             id: this._id,
             email: null,
+            friends: [],
             nickname: null
         };
-        this.friends = [];
-        this.conversations = [];
+        this.conversations = {};
         this.socket = null;
         this.sendCallback = send;
 
         if(typeof data !== "undefined") {
             this._id = data.id;
-            this.public = data;
+            this.email = data.email;
+            this.public.friends = data.friends;
+            this.nickname = data.nickname;
         }
     }
 
     send(message) {
-        this.messages.push(message);
+        this.conversations.push(message);
         this.sendCallback(message);
     }
 
@@ -45,11 +47,20 @@ class User {
     set email(email) {
         this.public.email = email;
     }
+    get nickname() {
+        return this.public.nickname;
+    }
+    set nickname(nick) {
+        return this.public.nickname;
+    }
+    get friends() {
+        return this.public.friends;
+    }
     addFriend(friend) {
-        this.friends.push(friend);
+        this.public.friends.push(friend);
     }
     removeFriend(friendId) {
-        this.friends.slice(this.public.friends.indexOf(friendId));
+        this.public.friends.slice(this.public.friends.indexOf(friendId));
     }
 
     get data() {
