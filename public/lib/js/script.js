@@ -10,7 +10,7 @@
 
     function ready() {
         DOM.batchFind(
-            ["messageBox", "toBox", "messageList", "userList",
+            ["messageBox", "friendList", "messageList", "conversationList", "newConvButton",
                 "loginModal","findFriendsModal", "modal-title", "findFriendsList", "findFriendsSubmit",
                 "loginSubmit", "loginEmail", "loginPassword",
                 "registerSubmit", "registerEmail", "registerPassword", "registerPassword2", "registerError",
@@ -23,6 +23,7 @@
         DOM.find("submit").on("click", sendMsg);
         DOM.loginSubmit.on("click", login);
         DOM.findFriendsSubmit.on("click", addFriends);
+        DOM.newConvButton.on("click", newSingleConversation);
         DOM.registerSubmit.on("click", register);
         DOM.registerSubmit.disabled = true;
         DOM.userInfoLink.on("click", loginModal);
@@ -51,11 +52,15 @@
     }
     function init(eventList) {
         events = eventList;
+        socket.emit(events.clientConversationSync, getConversations());
         //socket.on(events.serverUserConnect, addUser);
         socket.on(events.serverUserList, updateUserList);
         socket.on(events.serverUserDisconnect, removeUser);
         socket.on(events.serverUserData,  serverUserData);
         socket.on(events.serverMessageReceive, addMessage);
+        socket.on(events.serverUserFriendsList, updateFriendsList);
+        socket.on(events.serverConversationData, updateConversationData);
+
         socket.on("disconnect", function(){
             socket.disconnect();
         })
@@ -149,7 +154,7 @@
         clearUser();
         socket.disconnect();
         DOM.userInfoLink.innerText = "Login / Register";
-        DOM.userList.innerHTML = '';
+        DOM.conversationList.innerHTML = '';
         DOM.messageList.innerHTML = '';
         DOM.userInfoDropdown.hide();
         DOM.modal.switch("loginModal");
@@ -191,26 +196,47 @@
         DOM.userInfoLink.innerText = user.email;
     }
 
-    function serverUserData(userData) {
-        setUser(userData);
-        DOM.userInfoLink.innerText = userData.email;
+    function serverUserData(data) {
+        updateFriendsList(data.friendsList);
+        updateConversationList(data.conversations);
+        setUser(data.userData);
+        DOM.userInfoLink.innerText = data.userData.email;
+
     }
 
-        function addUser(userData, where) {
-            users[userData.id] = userData;
-            let li = document.createElement("li");
-            li.setAttribute("id", userData.id);
-            li.innerHTML = '<input type="checkbox" name="addFriend" value="'+userData.id+'">' + userData.email + '</a>';
-            DOM[where].appendChild(li);
-            li.addEventListener("click", sendTo);
-            return li;
+    function addUser(userData, where) {
+        users[userData.id] = userData;
+        let li = document.createElement("li");
+        li.setAttribute("id", userData.id);
+        li.innerHTML = '<input type="checkbox" name="addFriend" value="'+userData.id+'">' + userData.email + '</a>';
+        DOM[where].appendChild(li);
+        li.addEventListener("click", sendTo);
+        return li;
     }
 
+    function newSingleConversation(e) {
+        console.log(e.target.id);
+        let data = {
+            userId: getUserData("id"),
+            users: [getUserData("id"), e.target.id]
+        };
+        socket.emit(events.clientConversationCreate, data);
+    }
+
+    function newGroupConversation() {
+
+    }
     function removeUser(userData) {
         console.log("User disconnected", userData);
         let userDisplay = document.getElementById(userData.id);
         delete users[userData.id];
-        DOM.userList.removeChild(userDisplay);
+        DOM.conversationList.removeChild(userDisplay);
+    }
+    function addUser(userData) {
+        let li = document.createElement("li");
+        li.setAttribute("id", userData.id);
+        li.innerHTML = '<input type="checkbox" name="addFriend" value="'+userData.id+'">' + userData.email + '</a>';
+        DOM.findFriendsList.appendChild(li);
     }
 
     function addMessage(message) {
@@ -222,19 +248,51 @@
     }
 
     function storeMessage(message) {
-        let conversation = [];
+        let conversation = {};
         // pull existing conversation if there is one
-        if (typeof localStorage[message.conversationId] !== "undefined") {
-            conversation = JSON.parse(localStorage[message.conversationId]);
+        if (getConversation(message.conversationId) !== false) {
+            conversation = getConversation(message.conversationId);
         }
         conversation.push(message);
-        localStorage[message.conversationId] = JSON.stringify(conversation);
+        storeConversation(conversation);
     }
 
+    function setConversation(conv) {
+        localStorage[conv.id] = JSON.stringify(conv);
+    }
+    function getConversation(convId) {
+        if (typeof localStorage[convId] !== "undefined") {
+            return localStorage[convId];
+        } else {
+            return false;
+        }
+    }
+    function getConversations() {
+        let convs = {};
+        for (var key in localStorage) {
+            if (key != "user" && key != "userToken") {
+                convs[key] = localStorage[key];
+            }
+        }
+        return convs;
+    }
+
+    function updateConversationData(conv) {
+        setConversation(conv);
+        if(!DOM.find(conv.id)) {
+            DOM.createConversation(conv);
+        }  else {
+            DOM.updateConversation(conv);
+        }
+    }
+
+    function updateConversationList(convs) {
+
+    }
     function sendTo(event) {
-        DOM.toBox.value = event.target.innerText;
         toConvId = event.target.parentElement.id;
     }
+
 
     function checkForEnter(event) {
         if (event.keyCode == 13) {
@@ -256,8 +314,8 @@
     }
 
     function updateUserList(list) {
-        users = list;
-        DOM.userList.innerHTML = '';
+        console.log(list);
+        DOM.conversationList.innerHTML = '';
         for (let i in list) {
             addUser(list[i], "findFriendsList");
         }
@@ -275,5 +333,13 @@
             friends: friends
         };
         socket.emit(events.clientUserFriendAdd, data);
+    }
+
+    function updateFriendsList(friends) {
+        setUserData("friends", friends);
+        for (let i in friends) {
+            DOM.addFriend(friends[i], sendTo);
+        }
+
     }
 })();

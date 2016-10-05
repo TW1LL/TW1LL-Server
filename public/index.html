@@ -23,21 +23,34 @@
                 </ul>
             </div>
         </div>
-        <div id="content">
-            <div id="usersBox">
-                <h3>Users</h3>
-                <ul id="userList"></ul>
+        <div id="container">
+            <div id="sidepane">
+                <div id="conversations">
+                    <h3>Conversations</h3>
+                    <div id="newConvButton" class="convLink">+ New Conversation</div>
+                    <ul id="conversationList"></ul>
+                </div>
+                <div id="friends">
+                    <h3>Friends</h3>
+                    <ul id="friendList"></ul>
+                </div>
             </div>
-            <div id="messagesBox">
-                <ul id="messageList"></ul>
+            <div id="content">
+                <div id="body">
+                    <div id="body-title"><h4>Name of Conversation</h4></div>
+                    <div id="body-text">Sub-text of conversation</div>
+                </div>
+                <ul id="messageList">
+                    <li class="message">&lt;test&gt; Test Message</li>
+                </ul>
+                <div id="messageInput">
+                    <input type="text" id="messageBox" placeholder="Enter Message here"/>
+                    <button id="submit">▶</button>
+                </div>
             </div>
         </div>
         <div id="footer">
-            <input type="text" id="toBox" placeholder="Send To...">
-            <div class="messageInput">
-                <input type="text" id="messageBox" placeholder="Enter Message here"/>
-                <button id="submit">▶</button>
-            </div>
+
         </div>
     </div>
 

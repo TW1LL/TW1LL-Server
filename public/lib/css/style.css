@@ -56,41 +56,49 @@ ul li {
   padding: 10px;
   border-bottom: 1px solid #006064; }
 
-#content {
+#container {
   display: flex;
   flex: auto; }
 
 #footer {
   display: flex; }
 
-#usersBox {
+#sidepane {
   background: #B2EBF2;
   color: #000000;
   flex: 1;
-  padding: 5px;
-  border-right: 1px solid #006064; }
+  border-right: 1px solid #006064;
+  display: flex;
+  flex-flow: column;
+  align-items: stretch; }
+  #sidepane #conversations {
+    flex: 1; }
+  #sidepane #friends {
+    flex: 0.1; }
 
-#messagesBox {
+#content {
   background: #E0F7FA;
   color: #000000;
   flex: 3;
-  overflow: auto; }
+  display: flex;
+  align-items: stretch;
+  flex-flow: column; }
+  #content #messageInput {
+    display: flex; }
+  #content #messageList {
+    flex: auto; }
 
-#usersBox a:hover {
+#sidepane a:hover {
   text-decoration: underline;
   color: #0097A7; }
 
-#usersBox h3 {
+#sidepane h3 {
   text-align: center;
   border-bottom: 1px solid #000000; }
 
 /* input stuff */
 #toBox {
   flex: 1; }
-
-.messageInput {
-  flex: 3;
-  display: flex; }
 
 #messageBox {
   flex: auto; }
@@ -161,3 +169,7 @@ input[type=text], input[type=password] {
 
 #registerError {
   font-size: 10px; }
+
+.convLink {
+  cursor: pointer;
+  border-bottom: 1px solid #80DEEA; }

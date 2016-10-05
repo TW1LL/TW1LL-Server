@@ -9,10 +9,10 @@ class User {
         this.public = {
             id: this._id,
             email: null,
-            friends: [],
             nickname: null
         };
-        this.messages = [];
+        this.friends = [];
+        this.conversations = [];
         this.socket = null;
         this.sendCallback = send;
 
@@ -45,14 +45,11 @@ class User {
     set email(email) {
         this.public.email = email;
     }
-    get friends() {
-        return this.public.friends;
-    }
     addFriend(friend) {
-        this.public.friends.push(friend);
+        this.friends.push(friend);
     }
     removeFriend(friendId) {
-        this.public.friends.slice(this.public.friends.indexOf(friendId));
+        this.friends.slice(this.public.friends.indexOf(friendId));
     }
 
     get data() {

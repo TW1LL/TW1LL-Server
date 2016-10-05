@@ -82,7 +82,7 @@ class User {
                         this.createNewPassword(user.id, salt, hash).then(() => {
                             resolve({email: params.email, password: params.pass});
                         });
-                    });
+                    }).catch((err) => log.error(err));
                 });
             });
         })
@@ -90,7 +90,6 @@ class User {
 
     create(user){
         log.recurrent("Creating new user", user.name);
-        log.debug(user);
         return new Promise((resolve, reject) => {
             let data = [user.id, user.email, user.friends, user.nickname, user.conversations];
             this.context.queries.createUser.run(data, function(err) {
@@ -112,7 +111,7 @@ class User {
                     bcrypt.compare(data.password, userPWData.password_hash, (err, res) => {
                         if (res) {
                             log.event("User authorized");
-                            resolve({valid: true, id: userPWData.id})
+                            resolve({valid: true, id: userPWData.id, email: data.email})
                         } else {
                             resolve({valid: false, data: "Password doesn't match."})
                         }

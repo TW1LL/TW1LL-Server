@@ -26,15 +26,16 @@ let events = {
     serverUserDisconnect: "server use disconnect",
     serverUserList: "server user list",
     serverUserData: "server user data",
+    serverUserFriendsList: "server send friends list",
     serverMessageReceive: "server message receive",
     serverConversationData: "server conversation data",
-    serverSendFriendsList: "server send friends list",
     clientMessageSend: "client message send",
     clientUserData: "client user data",
     clientConversationCreate: "client conversation create",
     clientUserList: "client user list",
     clientUserFriendAdd: "client user friend add",
-    clientUserFriendRemove: "client user friend remove"
+    clientUserFriendRemove: "client user friend remove",
+    clientConversationSync: "client conversation sync",
 };
 
 let db = require('./db/Database');
@@ -67,10 +68,9 @@ app.post('/register/:email/:pass', function (req,res) {
     .then(db.User.authorize.bind(db.User))
     .then((auth) => {
         if (auth.valid) {
-            auth.data = users[auth.id].data;
-            auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
             users[user.id] = user;
-            console.log(user);
+            auth.data = user.data;
+            auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
         }
         log.recurrent("Authorization status " + auth.valid);
         log.debug(auth.data);
@@ -105,11 +105,13 @@ function connectSocket(socket) {
     user.socket = socket;
     log.event(user.email+" connected.");
     socket.emit(events.serverEvents, events);
-    socket.emit(events.serverUserData, user.data);
+    socket.emit(events.serverUserData, sendUserData(user));
     socket.broadcast.emit(events.serverUserConnect, user.data);
+    socket.on(events.clientConversationSync, syncConversations);
     socket.on(events.clientUserFriendAdd, addFriends);
     socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
     socket.on(events.clientConversationCreate, createConversation);
+
     socket.on("disconnect", function () {
         log.event("User " + user.email + " disconnected");
         socket.broadcast.emit(events.serverUserDisconnect, user.data);
@@ -141,6 +143,18 @@ function send(message){
     });
 }
 
+function sendUserData(user) {
+    let data = {};
+    data.userData = user.data;
+    data.friendsList = createFriendsList(user);
+
+
+    return data;
+
+
+}
+
+
 function createUserList() {
     let list = {};
     for(var id in users) {
@@ -152,7 +166,8 @@ function createUserList() {
 function createFriendsList(user) {
     let list = {};
     for(let id in user.friends) {
-        list[id] = users[user.friends[id]].data;
+        let user = users[user.friends[id]];
+        list[user.id] = user.data;
     }
     return list;
 }
@@ -165,5 +180,5 @@ function addFriends(data){
             user.addFriend(friend);
         }
     });
-    user.socket.emit(events.serverSendFriendsList, createFriendsList(user));
+    user.socket.emit(events.serverUserFriendsList, createFriendsList(user));
 }

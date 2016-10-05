@@ -5,6 +5,7 @@ function Dom() {
     self.find = find;
     self.batchFind = batchFind;
     self.modal = new modal(self);
+    self.addFriend = addFriend;
     function find(id) {
         if (typeof self[id] === "undefined") {
             return build(id);
@@ -84,5 +85,27 @@ function Dom() {
         return mdl;
     }
 
+    function addFriend(userData, sendTo) {
+        let li = document.createElement("li");
+        li.setAttribute("id", userData.id);
+        li.innerHTML = '<a href="#">' + userData.email + '</a>';
+        self.friendList.appendChild(li);
+        li.addEventListener("click", sendTo);
+    }
+    function createConversation(conv) {
+        let li = document.createElement("li");
+        li.setAttribute("id", conv.id);
+        li.setAttribute("class", "convLink");
+        li.innerHTML = '<a href="#">' + conv.name + '</a>';
+        self.conversationList.appendChild(li);
+
+        for(var i in conv.messages) {
+            li = document.createElement("li");
+            li.setAttribute("id", conv.messages[i].id);
+            li.setAttribute("class", "convMessage");
+            li.innerHTML = '<a href="#" data-userId="'+conv.messages[i].from+'"><' + getUserData("friends")[conv.messages[i].from] + '></a> ' + conv.messages[i].text;
+            self.messageList.appendChild(li);
+        }
+    }
     return self;
 }
