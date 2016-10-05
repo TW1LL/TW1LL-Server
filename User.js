@@ -9,7 +9,8 @@ class User {
         this.public = {
             id: this._id,
             email: null,
-            friends: []
+            friends: [],
+            nickname: null
         };
         this.messages = [];
         this.socket = null;

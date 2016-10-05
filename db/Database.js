@@ -1,0 +1,75 @@
+"use strict";
+let db = require("sqlite3");
+let Log = require('./../Log');
+let log = new Log("high");
+let User = require('./User'),
+    Message = require('./Message'),
+    Conversation = require('./Conversation');
+
+class Database {
+
+    constructor() {
+        this.db = new db.Database("tw1ll.sqlite3", db.OPEN_READWRITE | db.OPEN_CREATE, function (error) {
+            if (error) {
+                log.error("Error opening database:", error)
+            }
+        });
+
+        this.tableCreateStatements = {
+            "createUserTable": "CREATE TABLE IF NOT EXISTS users (id TEXT, email TEXT, friends TEXT, nickname TEXT, conversations TEXT, PRIMARY KEY (id))",
+            "createMessageTable": "CREATE TABLE IF NOT EXISTS messages (id TEXT, conversation_id TEXT, to_id TEXT, from_id TEXT, message_text TEXT, timestamp TEXT, PRIMARY KEY (id))",
+            "createUserPasswordTable": "CREATE TABLE IF NOT EXISTS user_passwords (id TEXT, password_salt TEXT, password_hash TEXT, PRIMARY KEY (id))",
+            "createConversationsTable": "CREATE TABLE IF NOT EXISTS conversations (id TEXT, members TEXT, name TEXT)"
+        };
+
+        this.queries = {
+            "createUser": "INSERT INTO users VALUES (?, ?, ?, ?, ?)",
+            "createMessage": "INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)",
+            "getUser": "SELECT * FROM users WHERE id = ?",
+            "retrieveMessage": "SELECT * FROM messages WHERE to_id = $id or from_id = $id",
+            "retrievePassword": "SELECT * FROM user_passwords WHERE id = ?",
+            "createNewPassword": "INSERT INTO user_passwords VALUES (?, ?, ?)",
+            "updatePassword": "UPDATE user_passwords SET password_salt = ?, password_hash = ? WHERE id = ?",
+            "findIdByEmail": "SELECT id FROM users WHERE email = ?",
+            "createConversation": "INSERT INTO conversations VALUES (?, ?, ?)",
+            "retrieveConversationById": "SELECT * FROM conversations WHERE id = ?",
+            "retrieveConversationByMembers": "SELECT * FROM conversations WHERE members = ?"
+        };
+
+        this.prepareDB();
+        this.User = new User(this);
+        this.Message = new Message(this);
+        this.Conversation = new Conversation(this);
+    }
+
+    prepareDB(){
+        log.event("Preparing DB tables and queries");
+        return new Promise((resolve) => {
+
+            for (let createStatement in this.tableCreateStatements) {
+                this.db.exec(this.tableCreateStatements[createStatement], function(error){
+                    if (error){
+                        log.event("Error creating table " + createStatement);
+                        log.event(error);
+                    }
+                });
+            }
+
+            let statements  = {};
+            for(let query in this.queries){
+                let queryText = this.queries[query];
+                let preparedStatement = this.db.prepare(queryText, null, function(error){
+                    if (error){
+                        log.event("error preparing query " + query);
+                        log.event(error);
+                    }
+                });
+                statements[query] = preparedStatement;
+            }
+            this.queries = statements;
+            resolve();
+        })
+    }
+}
+
+module.exports = new Database();

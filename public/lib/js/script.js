@@ -152,6 +152,7 @@
         DOM.userList.innerHTML = '';
         DOM.messageList.innerHTML = '';
         DOM.userInfoDropdown.hide();
+        DOM.modal.switch("loginModal");
     }
     function getUserData(parameter) {
         if (typeof localStorage["user"] === "undefined"){
@@ -221,17 +222,13 @@
     }
 
     function storeMessage(message) {
-        let allMessages = {};
-        // pull existing list of messages if there is one
-        if (typeof localStorage["messages"] !== "undefined") {
-            allMessages = JSON.parse(localStorage["messages"]);
+        let conversation = [];
+        // pull existing conversation if there is one
+        if (typeof localStorage[message.conversationId] !== "undefined") {
+            conversation = JSON.parse(localStorage[message.conversationId]);
         }
-        // if this conversation doesn't exist yet, create it
-        if (typeof allMessages[message.from] === "undefined") {
-            allMessages[message.from] = []
-        }
-        allMessages[message.from].push(message);
-        localStorage["messages"] = JSON.stringify(allMessages);
+        conversation.push(message);
+        localStorage[message.conversationId] = JSON.stringify(conversation);
     }
 
     function sendTo(event) {

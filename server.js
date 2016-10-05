@@ -1,6 +1,5 @@
 "use strict";
 let fs = require('fs');
-let bcrypt = require('bcrypt-nodejs');
 let express = require('express');
 let app = express();
 let jwt = require('jsonwebtoken');
@@ -29,14 +28,16 @@ let events = {
     serverUserData: "server user data",
     serverMessageReceive: "server message receive",
     serverConversationData: "server conversation data",
+    serverSendFriendsList: "server send friends list",
     clientMessageSend: "client message send",
     clientUserData: "client user data",
     clientConversationCreate: "client conversation create",
     clientUserList: "client user list",
-    clientUserFriendAdd: "client user friend add"
+    clientUserFriendAdd: "client user friend add",
+    clientUserFriendRemove: "client user friend remove"
 };
 
-let db = require('./Database');
+let db = require('./db/Database');
 let log = new Log(config.logLevel);
 
 http.listen(config.serverPort, function() {
@@ -44,13 +45,12 @@ http.listen(config.serverPort, function() {
     populateUsers();
 });
 
-
 app.use(express.static(__dirname + '/public'));
 
 app.post('/login/:email/:pass', function (req,res) {
     log.event('Authorizing user...');
 
-    authorize({email: req.params.email, password: req.params.pass}).then((auth) => {
+    db.User.authorize({email: req.params.email, password: req.params.pass}).then((auth) => {
         if (auth.valid) {
             auth.data = users[auth.id].data;
             auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
@@ -62,32 +62,20 @@ app.post('/login/:email/:pass', function (req,res) {
 
 app.post('/register/:email/:pass', function (req,res) {
     log.event('Registering user...');
-    new Promise((resolve, reject) => {
-        bcrypt.genSalt(10, function (err, salt) {
-            bcrypt.hash(req.params.pass, salt, null, function (err, hash) {
-                let user = new User(send);
-                user.email = req.params.email;
-                db.createUser(user).then(() => {
-                    db.createNewPassword(user.id, salt, hash).then(() => {
-                        users[user.id] = user;
-                        resolve({email: req.params.email, password: req.params.pass});
-                    });
-                });
-
-            });
-        });
-    })
-    .then(authorize)
+    let user = new User(send);
+    db.User.register(user, req.params)
+    .then(db.User.authorize.bind(db.User))
     .then((auth) => {
         if (auth.valid) {
             auth.data = users[auth.id].data;
             auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
+            users[user.id] = user;
+            console.log(user);
         }
         log.recurrent("Authorization status " + auth.valid);
         log.debug(auth.data);
         auth.userList = createUserList();
         res.json(auth);
-
     });
 });
 
@@ -99,38 +87,17 @@ io.on('connection', jwtIO.authorize({
 io.on('authenticated', connectSocket);
 
 function populateUsers() {
-    return new Promise ((res, rej) => {
-        db.getAllUsers().then((userList) => {
+    return new Promise ((resolve) => {
+        db.User.getAll().then((userList) => {
             userList.forEach((data) => {
                 let user = new User(send, data);
                 users[user.id] = user;
 
             });
-            res();
+            resolve();
         });
     });
 
-}
-
-function authorize(data) {
-    return new Promise((resolve, reject) => {
-        db.findIdByEmail(data.email).then(db.getPassword.bind(db)).then((userPWData) => {
-            log.debug("Password lookup result");
-            log.debug(userPWData);
-            if (userPWData) {
-                bcrypt.compare(data.password, userPWData.password_hash, (err, res) => {
-                    if (res) {
-                        log.event("User authorized");
-                        resolve({valid: true, id: userPWData.id})
-                    } else {
-                        resolve({valid: false, data: "Password doesn't match."})
-                    }
-                });
-            } else {
-                resolve({valid: false, data: "User not found."});
-            }
-        });
-    })
 }
 
 function connectSocket(socket) {
@@ -141,6 +108,7 @@ function connectSocket(socket) {
     socket.emit(events.serverEvents, events);
     socket.emit(events.serverUserData, user.data);
     socket.broadcast.emit(events.serverUserConnect, user.data);
+    socket.on(events.clientUserFriendAdd, addFriends);
     socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
     socket.on(events.clientConversationCreate, createConversation);
     socket.on("disconnect", function () {
@@ -153,12 +121,12 @@ function connectSocket(socket) {
 
 function createConversation(conversationRequest){
     let conversation = null;
-    db.findConversationId(conversationRequest.users)
+    db.Conversation.findId(conversationRequest.users)
         .then((existingId) => {
             if (existingId){
-                conversation = db.getConversationById(existingId);
+                conversation = db.Conversation.getById(existingId);
             } else {
-                db.createConversation(id, conversationRequest.users);
+                db.Conversation.create(id, conversationRequest.users);
             }
         })
         .then(() => users[conversationRequest.userId].socket.emit(id));
@@ -166,12 +134,12 @@ function createConversation(conversationRequest){
 
 function send(message){
     log.message(users[message.from].email + " > " + users[message.conversationId].email);
-    db.getConversationById(message.conversationId)
+    db.Conversation.getById(message.conversationId)
         .then((row) => {
         for (let user in row.users){
             user.receive(message);
         }
-        db.createMessage(message);
+        db.Message.create(message);
     });
 }
 
@@ -181,5 +149,15 @@ function createUserList() {
         list[id] = users[id].data;
     }
     return list;
+}
 
+function addFriends(data){
+    let user = users[data.id];
+    let friends = user.friends;
+    data.friends.forEach((friend) => {
+        if (!friends.includes(friend)) {
+            user.addFriend(friend);
+        }
+    });
+    user.socket.emit(events.serverSendFriendsList, user.friends);
 }
