@@ -11,15 +11,18 @@
     function ready() {
         DOM.batchFind(
             ["messageBox", "toBox", "messageList", "userList",
+                "loginModal","findFriendsModal", "modal-title", "findFriendsList", "findFriendsSubmit",
                 "loginSubmit", "loginEmail", "loginPassword",
                 "registerSubmit", "registerEmail", "registerPassword", "registerPassword2", "registerError",
                 "userInfo", "userInfoDropdown", "userInfoLink",
                 "userLogout"
             ]);
         DOM.modal.init();
-        DOM.userInfoDropdown.style.display = "none";
+        DOM.userInfoDropdown.hide();
+        DOM.findFriendsModal.hide();
         DOM.find("submit").on("click", sendMsg);
         DOM.loginSubmit.on("click", login);
+        DOM.findFriendsSubmit.on("click", addFriends);
         DOM.registerSubmit.on("click", register);
         DOM.registerSubmit.disabled = true;
         DOM.userInfoLink.on("click", loginModal);
@@ -48,7 +51,7 @@
     }
     function init(eventList) {
         events = eventList;
-        socket.on(events.serverUserConnect, addUser);
+        //socket.on(events.serverUserConnect, addUser);
         socket.on(events.serverUserList, updateUserList);
         socket.on(events.serverUserDisconnect, removeUser);
         socket.on(events.serverUserData,  serverUserData);
@@ -94,14 +97,15 @@
 
     function register(e) {
         let http = new XMLHttpRequest();
-        http.open("POST", "/register/"+DOM.loginEmail.value+"/"+DOM.loginPassword.value, true);
+        http.open("POST", "/register/"+DOM.registerEmail.value+"/"+DOM.registerPassword.value, true);
         http.send();
         http.onload = function() {
             let res = JSON.parse(this.response);
             if (res.valid) {
                 setUser(res.data);
                 setUserToken(res.token);
-                DOM.modal.close();
+                updateUserList(res.userList);
+                DOM.modal.switch("findFriendsModal");
                 connect();
             } else {
                 sendError(res.data);
@@ -188,19 +192,17 @@
 
     function serverUserData(userData) {
         setUser(userData);
-        let el = DOM.find(userData.id) || addUser(userData);
-        el.innerHTML = '<a href="#" class="user">' + userData.email + '</a>';
         DOM.userInfoLink.innerText = userData.email;
     }
 
-    function addUser(userData) {
-        users[userData.id] = userData;
-        let li = document.createElement("li");
-        li.setAttribute("id", userData.id);
-        li.innerHTML = '<a href="#" class="user">' + userData.email + '</a>';
-        DOM.userList.appendChild(li);
-        li.addEventListener("click", sendTo);
-        return li;
+        function addUser(userData, where) {
+            users[userData.id] = userData;
+            let li = document.createElement("li");
+            li.setAttribute("id", userData.id);
+            li.innerHTML = '<input type="checkbox" name="addFriend" value="'+userData.id+'">' + userData.email + '</a>';
+            DOM[where].appendChild(li);
+            li.addEventListener("click", sendTo);
+            return li;
     }
 
     function removeUser(userData) {
@@ -260,8 +262,21 @@
         users = list;
         DOM.userList.innerHTML = '';
         for (let i in list) {
-            addUser(list[i]);
+            addUser(list[i], "findFriendsList");
         }
+        DOM.modal.switch("findFriendsModal");
     }
 
+    function addFriends() {
+        var checkboxes = document.querySelectorAll('input[name="addFriend"]:checked');
+        var friends = [], el;
+        Array.prototype.forEach.call(checkboxes, function(el) {
+            friends.push(el.value);
+        });
+        var data = {
+            id: getUserData("id"),
+            friends: friends
+        };
+        socket.emit(events.clientUserFriendAdd, data);
+    }
 })();

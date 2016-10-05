@@ -53,6 +53,7 @@ function Dom() {
 
     function modal() {
         var mdl = this;
+        mdl.current = "loginModal";
         mdl.init = function() {
             self.find("Modal");
             mdl.close();
@@ -65,7 +66,21 @@ function Dom() {
         mdl.open = function() {
             self["Modal"].show();
         };
+        mdl.switch = function(id) {
+            self[mdl.current].hide();
+            self[id].show();
+            mdl.current = id;
+            self["modal-title"].innerText = mdl.modals[mdl.current].title;
+        };
 
+        mdl.modals = {
+            "loginModal": {
+                "title": "Login or Register"
+            },
+            "findFriendsModal": {
+                "title": "Find your friends"
+            }
+        };
         return mdl;
     }
 

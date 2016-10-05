@@ -44,49 +44,53 @@
     <div class="modal" id="Modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Login or Register</h3>
+                <h3 id="modal-title">Login or Register</h3>
                 <a href="#" id="modal-close-X">X</a>
             </div>
-            <div class="modal-body">
-                    <div>
-                        <h4>Login</h4>
-                        <form>
-                            <p>
-                                <label for="email">Email</label>
-                                <input type="text" name="email" id="loginEmail" />
-                            </p>
-                            <p>
-                                <label for="password">Password</label>
-                                <input type="password" name="password" id="loginPassword" />
-                            </p>
-                            <p>
-                                <button id="loginSubmit">Login</button>
-                            </p>
-                        </form>
+            <div class="modal-body" id="loginModal">
+                <div>
+                    <h4>Login</h4>
+                    <form>
+                        <p>
+                            <label for="email">Email</label>
+                            <input type="text" name="email" id="loginEmail" />
+                        </p>
+                        <p>
+                            <label for="password">Password</label>
+                            <input type="password" name="password" id="loginPassword" />
+                        </p>
+                        <p>
+                            <button id="loginSubmit">Login</button>
+                        </p>
+                    </form>
 
-                    </div>
-                    <div>
-                        <div><h4>New user? Register here</h4></div>
-                        <form>
-                            <p>
-                                <label for="email">Email</label>
-                                <input type="text" name="email" id="registerEmail" />
-                            </p>
-                            <p>
-                                <label for="password">Password</label>
-                                <input type="password" name="password" id="registerPassword" />
-                            </p>
-                            <p>
-                                <label for="password2">Repeat PW</label>
-                                <input type="password" name="password2" id="registerPassword2" />
-                            </p>
-                            <p>
-                                <button id="registerSubmit">Register</button> <span id="registerError"></span>
-                            </p>
-                        </form>
-                    </div>
+                </div>
+                <div>
+                    <div><h4>New user? Register here</h4></div>
+                    <form>
+                        <p>
+                            <label for="email">Email</label>
+                            <input type="text" name="email" id="registerEmail" />
+                        </p>
+                        <p>
+                            <label for="password">Password</label>
+                            <input type="password" name="password" id="registerPassword" />
+                        </p>
+                        <p>
+                            <label for="password2">Repeat PW</label>
+                            <input type="password" name="password2" id="registerPassword2" />
+                        </p>
+                        <p>
+                            <button id="registerSubmit">Register</button> <span id="registerError"></span>
+                        </p>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-body" id="findFriendsModal">
+                <ul id="findFriendsList">
 
-
+                </ul>
+                <button id="findFriendsSubmit">Add Friends</button>
             </div>
             <div class="modal-footer">
                 <button id="modal-close">Close</button>

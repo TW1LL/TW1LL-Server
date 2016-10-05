@@ -31,7 +31,9 @@ let events = {
     serverConversationData: "server conversation data",
     clientMessageSend: "client message send",
     clientUserData: "client user data",
-    clientConversationCreate: "client conversation create"
+    clientConversationCreate: "client conversation create",
+    clientUserList: "client user list",
+    clientUserFriendAdd: "client user friend add"
 };
 
 let db = require('./Database');
@@ -83,6 +85,7 @@ app.post('/register/:email/:pass', function (req,res) {
         }
         log.recurrent("Authorization status " + auth.valid);
         log.debug(auth.data);
+        auth.userList = createUserList();
         res.json(auth);
 
     });
@@ -106,6 +109,7 @@ function populateUsers() {
             res();
         });
     });
+
 }
 
 function authorize(data) {
@@ -136,7 +140,6 @@ function connectSocket(socket) {
     log.event(user.email+" connected.");
     socket.emit(events.serverEvents, events);
     socket.emit(events.serverUserData, user.data);
-    socket.emit(events.serverUserList, usersOnline);
     socket.broadcast.emit(events.serverUserConnect, user.data);
     socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
     socket.on(events.clientConversationCreate, createConversation);
@@ -145,6 +148,7 @@ function connectSocket(socket) {
         socket.broadcast.emit(events.serverUserDisconnect, user.data);
         delete usersOnline[user.id];
     });
+
 }
 
 function createConversation(conversationRequest){
@@ -157,7 +161,7 @@ function createConversation(conversationRequest){
                 db.createConversation(id, conversationRequest.users);
             }
         })
-        .then(users[conversationRequest.userId].socket.emit(id));
+        .then(() => users[conversationRequest.userId].socket.emit(id));
 }
 
 function send(message){
@@ -169,4 +173,13 @@ function send(message){
         }
         db.createMessage(message);
     });
+}
+
+function createUserList() {
+    let list = {};
+    for(var id in users) {
+        list[id] = users[id].data;
+    }
+    return list;
+
 }
