@@ -91,15 +91,8 @@ function populateUsers() {
     return new Promise ((resolve) => {
         db.User.getAll().then((userList) => {
             userList.forEach((data) => {
-                log.debug(data);
-                if (data.conversations) {
-                    db.Conversation.getList(data.conversations).then(function(convs) {
-                        data.conversations = convs;
-                    });
-                } else {
                     let user = new User(send, data);
                     users[user.id] = user;
-                }
             });
             resolve();
         });
@@ -107,8 +100,6 @@ function populateUsers() {
 }
 
 function connectSocket(socket) {
-    log.recurrent("Connected socket " + socket.id);
-    log.debug(socket.decoded_token);
     let user = users[socket.decoded_token.id];
     usersOnline[user.id] = user.data;
     user.socket = socket;
@@ -118,6 +109,7 @@ function connectSocket(socket) {
     socket.broadcast.emit(events.serverUserConnect, user.data);
     socket.on(events.clientConversationSync, syncConversations);
     socket.on(events.clientUserFriendAdd, addFriends);
+    socket.on(events.clientUserList, sendUserList);
     socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
     socket.on(events.clientConversationCreate, createConversation);
     socket.on("disconnect", function () {
@@ -129,15 +121,26 @@ function connectSocket(socket) {
 
 function createConversation(conversationRequest){
     let conversation = null;
-    db.Conversation.findIdByMembers(conversationRequest.users)
-        .then((existingId) => {
-            if (existingId){
-                conversation = db.Conversation.getById(existingId);
-            } else {
-                db.Conversation.create(id, conversationRequest.users);
-            }
-        })
-        .then(() => users[conversationRequest.userId].socket.emit(id));
+    new Promise((resolve, reject) => {
+        db.Conversation.findByMembers(conversationRequest.users)
+            .then((existing) => {
+                if (existing){
+                    conversation = new Conversation(existing.members, existing.name, existing.id);
+                    resolve(conversation);
+                } else {
+                    conversation = new Conversation(conversationRequest.users, null);
+                    db.Conversation.create(conversation.id, conversationRequest.users).then(()=>{
+                        resolve(conversation);
+                    });
+                }
+            });
+    }).then((conv) => {
+            users[conversationRequest.userId].socket.emit(events.serverConversationData, conv)
+        }
+    );
+
+
+
 }
 
 function send(message){
@@ -162,7 +165,9 @@ function sendUserData(user) {
 
 }
 
-
+function sendUserList(id) {
+    users[id].socket.emit(events.serverUserList, createUserList());
+}
 function createUserList() {
     let list = {};
     for(var id in users) {
@@ -173,7 +178,6 @@ function createUserList() {
 
 function createFriendsList(user) {
     log.recurrent("Creating friends list for " + user.id);
-    log.debug(user);
     let list = {};
     for(let id in user.friends) {
         let friend = users[user.friends[id]];
@@ -183,14 +187,20 @@ function createFriendsList(user) {
 }
 
 function addFriends(data){
+    log.event("Adding friends")
     let user = users[data.id];
+    if (user.friends === null) {
+        user.public.friends = [];
+    }
     let friends = user.friends;
     data.friends.forEach((friend) => {
         if (!friends.includes(friend)) {
             user.addFriend(friend);
         }
     });
-    user.socket.emit(events.serverUserFriendsList, createFriendsList(user));
+    db.User.saveFriends(user).then((result) => {
+        user.socket.emit(events.serverUserFriendsList, createFriendsList(user));
+    });
 }
 
 function syncConversations(conversations) {

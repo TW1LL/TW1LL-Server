@@ -5,8 +5,8 @@ function Dom() {
     self.find = find;
     self.batchFind = batchFind;
     self.modal = new modal(self);
-    self.addFriend = addFriend;
-    self.getFriendsList = getFriendsList;
+    self.addUser = addUser;
+    self.createConversation =  createConversation;
     function find(id) {
         if (typeof self[id] === "undefined") {
             return build(id);
@@ -86,23 +86,20 @@ function Dom() {
         return mdl;
     }
 
-    function addFriend(userData, sendTo, where) {
-        self.friends =  self.friends || [];
+    function addUser(userData, sendTo, type, where) {
         let li = document.createElement("li");
         li.setAttribute("data-userId", userData.id);
-        li.innerHTML = '<a href="#">' + userData.email + '</a>';
-        li.addEventListener("click", sendTo);
-        if(typeof where === "undefined") {
-            self.friendList.appendChild(li);
-        } else {
-            self[where].appendChild(li);
+        if(type == "checkbox") {
+            li.innerHTML = '<input type="checkbox" name="addFriend" value="'+userData.id+'">' + userData.email + '</a>';
+        } else if (type == "link") {
+            li.innerHTML = '<a href="#">' + userData.email + '</a>';
         }
-        self.friends.push(userData);
+        li.addEventListener("click", sendTo);
+        self[where].appendChild(li);
+
 
     }
-    function getFriendsList() {
-        return self.friends;
-    }
+
 
     function createConversation(conv) {
         let li = document.createElement("li");
@@ -111,12 +108,14 @@ function Dom() {
         li.innerHTML = '<a href="#">' + conv.name + '</a>';
         self.conversationList.appendChild(li);
 
+        let ul = document.createElement("ul");
+        ul.setAttribute("id", "conv_"+conv.id);
         for(var i in conv.messages) {
             li = document.createElement("li");
             li.setAttribute("id", conv.messages[i].id);
             li.setAttribute("class", "convMessage");
             li.innerHTML = '<a href="#" data-userId="'+conv.messages[i].from+'"><' + getUserData("friends")[conv.messages[i].from] + '></a> ' + conv.messages[i].text;
-            self.messageList.appendChild(li);
+            ul.appendChild(li);
         }
     }
     return self;

@@ -24,7 +24,7 @@ class Conversation {
         })
     }
 
-    findIdByMembers(users){
+    findByMembers(users){
         log.recurrent("Retrieving conversation by users" );
         log.debug(users);
         return new Promise((resolve) => {

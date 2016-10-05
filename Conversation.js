@@ -1,5 +1,6 @@
 "use strict";
 
+let uuid = require("uuid");
 class Conversation {
 
     constructor(members, name, id, messages){

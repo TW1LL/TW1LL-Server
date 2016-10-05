@@ -11,7 +11,7 @@
     function ready() {
         DOM.batchFind(
             ["messageBox", "friendList", "messageList", "conversationList", "newConvButton",
-                "loginModal","findFriendsModal", "modal-title", "findFriendsList", "findFriendsSubmit",
+                "loginModal","findFriendsModal", "modal-title", "findFriendsList", "findFriendsSubmit", "addFriendsLink",
                 "loginSubmit", "loginEmail", "loginPassword",
                 "registerSubmit", "registerEmail", "registerPassword", "registerPassword2", "registerError",
                 "userInfo", "userInfoDropdown", "userInfoLink",
@@ -24,7 +24,8 @@
         DOM.find("submit").on("click", sendMsg);
         DOM.loginSubmit.on("click", login);
         DOM.findFriendsSubmit.on("click", addFriends);
-        DOM.newConvButton.on("click", newSingleConversation);
+        DOM.addFriendsLink.on("click", friendsModal);
+        DOM.newConvButton.on("click", newConversation);
         DOM.registerSubmit.on("click", register);
         DOM.registerSubmit.disabled = true;
         DOM.userInfoLink.on("click", loginModal);
@@ -196,37 +197,51 @@
         localStorage["user"] = JSON.stringify(user);
         DOM.userInfoLink.innerText = user.email;
     }
+    function setUserFriends(friends) {
+        localStorage["friends"] = JSON.stringify(friends);
+    }
+    function getUserFriends() {
+        return JSON.parse(localStorage["friends"]);
+    }
 
     function serverUserData(data) {
-        updateFriendsList(data.friendsList);
-        updateConversationList(data.conversations);
+        updateFriendsList(data.friendsList, "friendList");
+        //updateConversationList(data.conversations);
         setUser(data.userData);
         DOM.userInfoLink.innerText = data.userData.email;
 
     }
 
-    function addUser(userData, where) {
-        users[userData.id] = userData;
-        let li = document.createElement("li");
-        li.setAttribute("id", userData.id);
-        li.innerHTML = '<input type="checkbox" name="addFriend" value="'+userData.id+'">' + userData.email + '</a>';
-        DOM[where].appendChild(li);
-        li.addEventListener("click", sendTo);
-        return li;
+
+    function newConversation(e) {
+        DOM["body-title"].innerHTML = '<h4>Start a new conversation</h4>';
+        DOM["body-text"].innerHTML = '' +
+            '<p>Select friends to add to the conversation:</p>' +
+            '<ul id="convFriendList"></ul>' +
+            '<button id="createConversationButton">Create Conversation</button>';
+        DOM.find("convFriendList");
+        DOM.find("createConversationButton");
+        DOM.createConversationButton.on("click", createConversation);
+        updateList(getUserFriends(), "convFriendList", "checkbox");
+
+        //
     }
 
-    function newSingleConversation(e) {
-        DOM["body-title"].innerText = 'Start a new conversation';
-        updateFriendsList(DOM.getFriendsList(), "messageList");
-
-        console.log(e.target.id);
-        let data = {
+    function createConversation() {
+        console.log("Sending Data to server...");
+        var checkboxes = document.querySelectorAll('#convFriendList input[name="addFriend"]:checked');
+        var members = [], el;
+        Array.prototype.forEach.call(checkboxes, function(el) {
+            members.push(el.value);
+        });
+        members.push(getUserData("id"));
+        var data = {
             userId: getUserData("id"),
-            users: [getUserData("id"), e.target.id]
+            users: members
         };
+        console.log(data);
         socket.emit(events.clientConversationCreate, data);
     }
-
     function newGroupConversation() {
 
     }
@@ -235,12 +250,6 @@
         let userDisplay = document.getElementById(userData.id);
         delete users[userData.id];
         DOM.conversationList.removeChild(userDisplay);
-    }
-    function addUser(userData) {
-        let li = document.createElement("li");
-        li.setAttribute("id", userData.id);
-        li.innerHTML = '<input type="checkbox" name="addFriend" value="'+userData.id+'">' + userData.email + '</a>';
-        DOM.findFriendsList.appendChild(li);
     }
 
     function addMessage(message) {
@@ -258,7 +267,7 @@
             conversation = getConversation(message.conversationId);
         }
         conversation.push(message);
-        storeConversation(conversation);
+        setConversation(conversation);
     }
 
     function setConversation(conv) {
@@ -274,7 +283,7 @@
     function getConversations() {
         let convs = {};
         for (var key in localStorage) {
-            if (key != "user" && key != "userToken") {
+            if (key != "user" && key != "userToken" && key != "friends") {
                 convs[key] = localStorage[key];
             }
         }
@@ -283,7 +292,7 @@
 
     function updateConversationData(conv) {
         setConversation(conv);
-        if(!DOM.find(conv.id)) {
+        if(!DOM.find("conv_" + conv.id)) {
             DOM.createConversation(conv);
         }  else {
             DOM.updateConversation(conv);
@@ -293,7 +302,7 @@
     function updateConversationList(convs) {
 
     }
-    function sendTo(event) {
+    function userClickCallback(event) {
         toConvId = event.target.parentElement.id;
     }
 
@@ -318,15 +327,18 @@
     }
 
     function updateUserList(list) {
-        console.log(list);
-        DOM.conversationList.innerHTML = '';
-        for (let i in list) {
-            addUser(list[i], "findFriendsList");
-        }
+        updateList(list, "findFriendsList", "checkbox");
         DOM.modal.switch("findFriendsModal");
     }
 
+
+    function friendsModal() {
+        DOM.modal.open();
+        DOM.modal.switch("findFriendsModal");
+        socket.emit(events.clientUserList, getUserData("id"));
+    }
     function addFriends() {
+        console.log("adding friends...");
         var checkboxes = document.querySelectorAll('input[name="addFriend"]:checked');
         var friends = [], el;
         Array.prototype.forEach.call(checkboxes, function(el) {
@@ -337,13 +349,21 @@
             friends: friends
         };
         socket.emit(events.clientUserFriendAdd, data);
+        DOM.modal.close();
     }
 
-    function updateFriendsList(friends, where) {
-        setUserData("friends", friends);
-        for (let i in friends) {
-            DOM.addFriend(friends[i], sendTo, where);
-        }
+    function updateFriendsList(friends) {
+        setUserFriends(friends);
+        updateList(friends, "friendList", "link");
+    }
 
+    function updateList(list, location, type) {
+        DOM[location].innerHTML = '';
+        if(typeof type === "undefined") {
+            type = "link";
+        }
+        for (let i in list) {
+            DOM.addUser(list[i], userClickCallback, type, location);
+        }
     }
 })();
