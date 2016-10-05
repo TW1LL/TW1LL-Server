@@ -11,12 +11,15 @@ class User {
     }
 
     saveFriends(user) {
+        log.recurrent("Saving friends");
+        log.debug(user);
+        let friends = this.context.flattenArray(user.friends);
         return new Promise((resolve, reject) => {
-            this.context.queries.saveFriends.run([user.friends, user.id], (err) => {
+            this.context.queries.saveFriends.run([friends, user.id], (err) => {
                 if (err) {
-                    reject(err);
+                    return reject(err);
                 } else {
-                    resolve(true);
+                    return resolve(true);
                 }
             })
         })
@@ -26,13 +29,13 @@ class User {
         log.recurrent("Retrieving password for " + userId);
         return new Promise((resolve) => {
             if (userId == false) {
-                resolve(false);
+                return resolve(false);
             } else {
                 this.context.queries.retrievePassword.get(userId, function (err, row) {
                     if (typeof row !== "undefined") {
-                        resolve(row)
+                        return resolve(row)
                     } else {
-                        resolve(false);
+                        return resolve(false);
                     }
                 });
             }
@@ -45,9 +48,9 @@ class User {
         return new Promise((resolve) => {
             this.context.queries.findIdByEmail.get(email, (err, row) => {
                 if (typeof row !== "undefined") {
-                    resolve(row.id);
+                    return resolve(row.id);
                 } else {
-                    resolve(false);
+                    return resolve(false);
                 }
             });
         });
@@ -68,9 +71,9 @@ class User {
                 if (err) {
                     log.debug(err);
                     log.debug(rows);
-                    reject(rows);
+                    return reject(rows);
                 } else {
-                    resolve(rows)}
+                    return resolve(rows)}
             });
         })
     }
@@ -82,7 +85,7 @@ class User {
         return new Promise((resolve) => {
             this.context.queries.createNewPassword.run([userId, salt, hash], (err) => {
                 log.debug(err);
-                resolve(err);
+                return resolve(err);
             });
         });
     }
@@ -94,7 +97,7 @@ class User {
                     user.email = params.email;
                     this.create(user).then(() => {
                         this.createNewPassword(user.id, salt, hash).then(() => {
-                            resolve({email: params.email, password: params.pass});
+                            return resolve({email: params.email, password: params.pass});
                         });
                     }).catch((err) => log.error(err));
                 });
@@ -108,9 +111,9 @@ class User {
             let data = [user.id, user.email, user.friends, user.nickname, user.conversations];
             this.context.queries.createUser.run(data, function(err) {
                 if (this.lastID) {
-                    resolve(true);
+                    return resolve(true);
                 } else {
-                    reject(err);
+                    return reject(err);
                 }
             })
         });
@@ -125,13 +128,13 @@ class User {
                     bcrypt.compare(data.password, userPWData.password_hash, (err, res) => {
                         if (res) {
                             log.event("User authorized");
-                            resolve({valid: true, id: userPWData.id, email: data.email})
+                            return resolve({valid: true, id: userPWData.id, email: data.email})
                         } else {
-                            resolve({valid: false, data: "Password doesn't match."})
+                            return resolve({valid: false, data: "Password doesn't match."})
                         }
                     });
                 } else {
-                    resolve({valid: false, data: "User not found."});
+                    return resolve({valid: false, data: "User not found."});
                 }
             });
         })

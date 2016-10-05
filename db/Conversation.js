@@ -13,26 +13,28 @@ class Conversation {
         log.recurrent("Creating conversation " + name);
         log.debug(id);
         log.debug(users);
+        let usersString = users.join(', ');
         return new Promise ((resolve, reject) => {
-            this.context.queries.createConversation.run([id, users, name], function(err){
+            this.context.queries.createConversation.run([id, usersString, name], function(err){
                 if (this.lastID) {
-                    resolve(true);
+                    return resolve(true);
                 } else {
-                    reject(err);
+                    return reject(err);
                 }
             })
         })
     }
 
-    findByMembers(users){
-        log.recurrent("Retrieving conversation by users" );
-        log.debug(users);
+    findByMembers(members){
+        log.recurrent("Retrieving conversation by members" );
+        log.debug(members);
+        let membersString = members.join(', ');
         return new Promise((resolve) => {
-            this.context.queries.retrieveConversationByMembers.get(users, (err, row) => {
+            this.context.queries.retrieveConversationByMembers.get(membersString, (err, row) => {
                 if (row) {
-                    resolve(row)
+                    return resolve(row)
                 } else {
-                    resolve(false)
+                    return resolve(false)
                 }
             })
         })
@@ -45,9 +47,9 @@ class Conversation {
                 log.debug(err);
                 log.debug(row);
                 if (row) {
-                    resolve(new Conversation(row.members, row.name, row.id));
+                    return resolve(new Conversation(row.members, row.name, row.id));
                 } else {
-                    reject(err);
+                    return reject(err);
                 }
             })
         })
@@ -55,8 +57,7 @@ class Conversation {
 
     getList(ids){
         log.recurrent("Retrieving conversations " + ids);
-        let idString = "'" + ids.join("', '") + "'";
-        console.log(idString);
+        let idString = ids.join(', ');
         return new Promise ((resolve, reject) => {
             this.context.queries.retrieveConversationByIdList.all(idString, function(err, rows) {
                 log.debug(this);
@@ -67,9 +68,9 @@ class Conversation {
                     for (let data in rows){
                         conversations[data.id] = rows[data];
                     }
-                    resolve(conversations);
+                    return resolve(conversations);
                 } else {
-                    reject(err);
+                    return reject(err);
                 }
             })
         })

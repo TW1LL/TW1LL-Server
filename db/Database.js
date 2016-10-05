@@ -39,7 +39,7 @@ class Database {
             "createConversation": "INSERT INTO conversations VALUES (?, ?, ?)",
             // conversation queries
             "retrieveConversationById": "SELECT * FROM conversations WHERE id = ?",
-            "retrieveConversationByMembers": "SELECT * FROM conversations WHERE members = ?",
+            "retrieveConversationByMembers": "SELECT * FROM conversations WHERE members = ( ? )",
             "retrieveConversationByIdList": "SELECT * FROM conversations WHERE id IN ( ? );"
         };
 
@@ -76,6 +76,10 @@ class Database {
             this.queries = statements;
             resolve();
         })
+    }
+
+    flattenArray(array){
+        return "'" + array.join("', '") + "'";
     }
 }
 
