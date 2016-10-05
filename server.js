@@ -87,14 +87,19 @@ io.on('connection', jwtIO.authorize({
 io.on('authenticated', connectSocket);
 
 function populateUsers() {
+    log.event("Populating users list");
     return new Promise ((resolve) => {
         db.User.getAll().then((userList) => {
             userList.forEach((data) => {
-                db.Conversation.getList(data.conversations).then(function(convs) {
-                    data.conversations = convs;
+                log.debug(data);
+                if (data.conversations) {
+                    db.Conversation.getList(data.conversations).then(function(convs) {
+                        data.conversations = convs;
+                    });
+                } else {
                     let user = new User(send, data);
                     users[user.id] = user;
-                });
+                }
             });
             resolve();
         });
@@ -102,6 +107,8 @@ function populateUsers() {
 }
 
 function connectSocket(socket) {
+    log.recurrent("Connected socket " + socket.id);
+    log.debug(socket.decoded_token);
     let user = users[socket.decoded_token.id];
     usersOnline[user.id] = user.data;
     user.socket = socket;
@@ -165,10 +172,12 @@ function createUserList() {
 }
 
 function createFriendsList(user) {
+    log.recurrent("Creating friends list for " + user.id);
+    log.debug(user);
     let list = {};
     for(let id in user.friends) {
-        let user = users[user.friends[id]];
-        list[user.id] = user.data;
+        let friend = users[user.friends[id]];
+        list[friend.id] = friend.data;
     }
     return list;
 }
@@ -185,22 +194,24 @@ function addFriends(data){
 }
 
 function syncConversations(conversations) {
-    let userId = conversations[0];
-    let clientConversations = conversations[1];
-    // get conversations from
-    let serverConversations = users[userId].conversations;
-    let missingConversations = {};
-    for (let conversationId in serverConversations) {
-        if (conversationId in clientConversations) {
-            let clientMessages = clientConversations[conversationId];
-            for (let message in serverConversations[conversationId]){
+    let user = conversations[0];
+    let clientConvs = conversations[1];
+    log.recurrent("Syncing conversations for " + user.id);
+    log.debug(clientConvs);
+    // get conversations from server
+    let serverConvs = users[user.id].conversations;
+    let missingConvs = {};
+    for (let convId in serverConvs) {
+        if (convId in clientConvs) {
+            let clientMessages = clientConvs[convId];
+            for (let message in serverConvs[convId]){
                 if (!clientMessages.contains(message)){
-                    missingConversations[conversationId] = serverConversations[conversationId];
+                    missingConvs[convId] = serverConvs[convId];
                     break;
                 }
             }
         } else {
-            missingConversations[conversationId] = serverConversations[conversationId];
+            missingConvs[convId] = serverConvs[convId];
         }
     }
 }

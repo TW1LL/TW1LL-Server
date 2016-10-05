@@ -49,8 +49,8 @@
         if (error.data.type == "UnauthorizedError" || error.data.code == "invalid_token") {
             sendError("User's token is invalid and requires new login");
         }
-
     }
+
     function init(eventList) {
         events = eventList;
         socket.emit(events.clientConversationSync, [getUserData(), getConversations()]);

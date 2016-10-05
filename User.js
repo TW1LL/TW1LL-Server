@@ -18,6 +18,7 @@ class User {
 
         if(typeof data !== "undefined") {
             this._id = data.id;
+            this.public.id = data.id;
             this.email = data.email;
             this.public.friends = data.friends;
             this.nickname = data.nickname;
@@ -33,7 +34,6 @@ class User {
         this.messages.push(newMessage);
         this.socket.emit("server message receive", newMessage);
     }
-
 
     get id() {
         return this._id;
