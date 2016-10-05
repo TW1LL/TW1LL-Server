@@ -11,7 +11,10 @@ let options = {
 };
 let http = require('https').createServer(options, app);
 let io = require('socket.io')(http);
-let Log = require('./Log'), User = require('./User'), Message = require('./Message');
+let Log = require('./Log'),
+    User = require('./User'),
+    Message = require('./Message'),
+    Conversation = require('./Conversation');
 
 let config = {
     serverPort: 443,
@@ -107,7 +110,7 @@ function populateUsers() {
 
 function authorize(data) {
     return new Promise((resolve, reject) => {
-        db.findIdByEmail(data.email).then(db.retrievePassword.bind(db)).then((userPWData) => {
+        db.findIdByEmail(data.email).then(db.getPassword.bind(db)).then((userPWData) => {
             log.debug("Password lookup result");
             log.debug(userPWData);
             if (userPWData) {
@@ -144,23 +147,22 @@ function connectSocket(socket) {
     });
 }
 
-function createConversation(createRequest){
-    let id = null;
-    db.findConversationId(createRequest.users)
+function createConversation(conversationRequest){
+    let conversation = null;
+    db.findConversationId(conversationRequest.users)
         .then((existingId) => {
             if (existingId){
-                id = existingId;
+                conversation = db.getConversationById(existingId);
             } else {
-                id = uuid.v1();
-                db.createConversation(id, createRequest.users);
+                db.createConversation(id, conversationRequest.users);
             }
-            users[createRequest.userId].socket.emit(id);
-        });
+        })
+        .then(users[conversationRequest.userId].socket.emit(id));
 }
 
 function send(message){
-    log.message(users[message.from].email + " > " + users[message.to].email);
-    db.retrieveConversationById(message.conversationId)
+    log.message(users[message.from].email + " > " + users[message.conversationId].email);
+    db.getConversationById(message.conversationId)
         .then((row) => {
         for (let user in row.users){
             user.receive(message);

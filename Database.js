@@ -1,7 +1,10 @@
 "use strict";
 let db = require("sqlite3");
 let Log = require('./Log');
-let log = new Log("high");
+let log = new Log("high"),
+    User = require('./User'),
+    Message = require('./Message'),
+    Conversation = require('./Conversation');
 
 class Database {
 
@@ -16,7 +19,7 @@ class Database {
             "createUserTable": "CREATE TABLE IF NOT EXISTS users (id TEXT, username TEXT, email TEXT, PRIMARY KEY (id))",
             "createMessageTable": "CREATE TABLE IF NOT EXISTS messages (id TEXT, conversation_id TEXT, to_id TEXT, from_id TEXT, message_text TEXT, timestamp TEXT, PRIMARY KEY (id))",
             "createUserPasswordTable": "CREATE TABLE IF NOT EXISTS user_passwords (id TEXT, password_salt TEXT, password_hash TEXT, PRIMARY KEY (id))",
-            "createConversationsTable": "CREATE TABLE IF NOT EXISTS conversations (id TEXT, users TEXT)"
+            "createConversationsTable": "CREATE TABLE IF NOT EXISTS conversations (id TEXT, members TEXT, name TEXT)"
         };
 
         this.queries = {
@@ -28,9 +31,9 @@ class Database {
             "createNewPassword": "INSERT INTO user_passwords VALUES (?, ?, ?)",
             "updatePassword": "UPDATE user_passwords SET password_salt = ?, password_hash = ? WHERE id = ?",
             "findIdByEmail": "SELECT id FROM users WHERE email = ?",
-            "createConversation": "INSERT INTO conversations VALUES (?, ?)",
+            "createConversation": "INSERT INTO conversations VALUES (?, ?, ?)",
             "retrieveConversationById": "SELECT * FROM conversations WHERE id = ?",
-            "retrieveConversationByMembers": "SELECT * FROM conversations WHERE users = ?"
+            "retrieveConversationByMembers": "SELECT * FROM conversations WHERE members = ?"
         };
 
         this.prepareDB();
@@ -65,7 +68,7 @@ class Database {
         })
     }
 
-    retrievePassword(userId) {
+    getPassword(userId) {
         log.recurrent("Retrieving password");
         log.debug(userId);
         return new Promise((resolve, reject) => {
@@ -113,9 +116,9 @@ class Database {
         return this.queries["createMessage"].run(data);
     }
 
-    createConversation(id, users) {
+    createConversation(id, users, name) {
         return new Promise ((resolve, reject) => {
-            this.queries.createConversation.run([id, users], (err) => {
+            this.queries.createConversation.run([id, users, name], (err) => {
                 if (this.lastID) {
                     resolve(true);
                 } else {
@@ -137,14 +140,14 @@ class Database {
         })
     }
 
-    retrieveConversationById(id) {
+    getConversationById(id) {
         log.recurrent("Retrieving conversation " + id);
         return new Promise ((resolve, reject) => {
             this.queries.retrieveConversationById.get(id, (err, row) => {
                 log.debug(err);
                 log.debug(row);
                 if (row) {
-                    resolve(row);
+                    resolve(new Conversation(row.members, row.name, row.id));
                 } else {
                     reject(err);
                 }

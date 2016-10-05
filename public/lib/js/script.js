@@ -99,7 +99,7 @@
         http.onload = function() {
             let res = JSON.parse(this.response);
             if (res.valid) {
-                setUser(res.data)
+                setUser(res.data);
                 setUserToken(res.token);
                 DOM.modal.close();
                 connect();
@@ -107,7 +107,7 @@
                 sendError(res.data);
                 clearUser();
             }
-        }
+        };
         e.preventDefault();
         return false;
     }
