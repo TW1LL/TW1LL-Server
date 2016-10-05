@@ -1,12 +1,14 @@
 "use strict";
 
-function Dom() {
+function Dom(storage) {
     var self = this;
     self.find = find;
     self.batchFind = batchFind;
     self.modal = new modal(self);
     self.addUser = addUser;
     self.createConversation =  createConversation;
+    self.showConversation = showConversation;
+    self.addMessage = addMessage;
     function find(id) {
         if (typeof self[id] === "undefined") {
             return build(id);
@@ -101,15 +103,28 @@ function Dom() {
     }
 
 
-    function createConversation(conv) {
+    function addMessage(message) {
+        if(message.from == storage.getUserData("id")) {
+            message.fromEmail = storage.getUserData("email");
+        } else {
+            message.fromEmail = storage.getUserFriends()[message.from].email;
+        }
         let li = document.createElement("li");
-        li.setAttribute("id", conv.id);
+        li.innerHTML = '<<a href="#" data-userId="'+message.from+'">' + message.fromEmail + '</a>> ' + message.text;
+        self["conv_"+message.conversationId].appendChild(li);
+        storage.storeMessage(message);
+    }
+    function createConversation(conv, callback) {
+        let li = document.createElement("li");
+        li.setAttribute("id", "link_" + conv.id);
         li.setAttribute("class", "convLink");
-        li.innerHTML = '<a href="#">' + conv.name + '</a>';
+        li.innerHTML = conv.name;
+        li.addEventListener("click", callback);
         self.conversationList.appendChild(li);
 
         let ul = document.createElement("ul");
         ul.setAttribute("id", "conv_"+conv.id);
+        ul.setAttribute("class", "convMessages");
         for(var i in conv.messages) {
             li = document.createElement("li");
             li.setAttribute("id", conv.messages[i].id);
@@ -117,6 +132,33 @@ function Dom() {
             li.innerHTML = '<a href="#" data-userId="'+conv.messages[i].from+'"><' + getUserData("friends")[conv.messages[i].from] + '></a> ' + conv.messages[i].text;
             ul.appendChild(li);
         }
+        self.conversationMessages.appendChild(ul);
+        self.find("conv_"+conv.id);
     }
+
+    function showConversation(conv) {
+        self["body-title"].innerHTML = "<h4>"+conv.name+"</h4>";
+        let members = [];
+        let friends = storage.getUserFriends();
+        for (let i in conv.members) {
+            if(conv.members[i] != storage.getUserData("id")) {
+                members.push('<a href="#" data-userId="' + conv.members[i] + '">' + friends[conv.members[i]].email + "</a>");
+            } else {
+                members.push('<a href="#">You</a>');
+            }
+        }
+        self["body-text"].innerHTML = "Members: " + members.join(", ");
+        let convs = self.conversationMessages.children;
+        for(var i = 0; i < convs.length; i++) {
+            self[convs[i].id].hide();
+        }
+        self["conv_"+conv.id].show();
+
+        updateConversationMessages(conv);
+    }
+
+    function updateConversationMessages(conv) {
+    }
+
     return self;
 }

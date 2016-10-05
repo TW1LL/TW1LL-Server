@@ -20,7 +20,6 @@ let config = {
     logLevel: "high"
 };
 let usersOnline = {}, users = {};
-
 let events = {
     serverEvents: "server events",
     serverUserConnect: "server user connect",
@@ -36,7 +35,7 @@ let events = {
     clientUserList: "client user list",
     clientUserFriendAdd: "client user friend add",
     clientUserFriendRemove: "client user friend remove",
-    clientConversationSync: "client conversation sync"
+    clientConversationSync: "client conversation sync",
 };
 
 let db = require('./db/Database');
@@ -115,12 +114,17 @@ function connectSocket(socket) {
     socket.on(events.clientConversationCreate, createConversation);
     socket.on("disconnect", function () {
         log.event("User " + user.email + " disconnected");
-        socket.broadcast.emit(events.serverUserDisconnect, user.data);
         delete usersOnline[user.id];
     });
 }
 
 function createConversation(conversationRequest){
+    let members = [];
+    for (let i in conversationRequest.users) {
+        members[i] = users[conversationRequest.users[i]].email;
+    }
+    let name = members.join(", ");
+
     let conversation = null;
     new Promise((resolve, reject) => {
         db.Conversation.findByMembers(conversationRequest.users)
@@ -129,7 +133,7 @@ function createConversation(conversationRequest){
                     conversation = new Conversation(existing.members, existing.name, existing.id);
                     return resolve(conversation);
                 } else {
-                    conversation = new Conversation(conversationRequest.users, null);
+                    conversation = new Conversation(conversationRequest.users, name);
                     db.Conversation.create(conversation.id, conversationRequest.users).then(()=>{
                         return resolve(conversation);
                     });
@@ -173,12 +177,9 @@ function createUserList() {
 
 function createFriendsList(user) {
     log.recurrent("Creating friends list for " + user.id);
-    log.debug(user);
     let list = {};
-    log.debug(user.friends);
     for(let id in user.friends) {
         let friend = users[user.friends[id]];
-        log.debug("Adding user " + friend.id);
         list[friend.id] = friend.data;
     }
     return list;

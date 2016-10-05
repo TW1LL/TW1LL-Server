@@ -3,14 +3,15 @@
 
     let users = {};
     let socket;
-    let events, toConvId;
-    let DOM = new Dom();
+    let events, currentConversation, currentUserId;
+    let storage = new Storage();
+    let DOM = new Dom(storage);
 
     addEventListener("DOMContentLoaded", ready);
 
     function ready() {
         DOM.batchFind(
-            ["messageBox", "friendList", "messageList", "conversationList", "newConvButton",
+            ["messageBox", "friendList", "conversationMessages", "conversationList", "newConvButton",
                 "loginModal","findFriendsModal", "modal-title", "findFriendsList", "findFriendsSubmit", "addFriendsLink",
                 "loginSubmit", "loginEmail", "loginPassword",
                 "registerSubmit", "registerEmail", "registerPassword", "registerPassword2", "registerError",
@@ -38,7 +39,7 @@
 
     function connect() {
         socket = io.connect();
-        socket.emit('authenticate', {token: getUserToken()});
+        socket.emit('authenticate', {token: storage.getUserToken()});
         socket.on("authenticated", authorized);
         socket.on("unauthorized", unauthorized);
     }
@@ -50,16 +51,17 @@
         if (error.data.type == "UnauthorizedError" || error.data.code == "invalid_token") {
             sendError("User's token is invalid and requires new login");
         }
+        storage.clearUser();
     }
 
     function init(eventList) {
         events = eventList;
-        socket.emit(events.clientConversationSync, [getUserData(), getConversations()]);
+        socket.emit(events.clientConversationSync, [storage.getUserData(), storage.getConversations()]);
         //socket.on(events.serverUserConnect, addUser);
         socket.on(events.serverUserList, updateUserList);
         socket.on(events.serverUserDisconnect, removeUser);
         socket.on(events.serverUserData,  serverUserData);
-        socket.on(events.serverMessageReceive, addMessage);
+        socket.on(events.serverMessageReceive, DOM.addMessage);
         socket.on(events.serverUserFriendsList, updateFriendsList);
         socket.on(events.serverConversationData, updateConversationData);
 
@@ -69,13 +71,13 @@
     }
 
     function checkLoginStatus() {
-        if (typeof getUserToken() !== "undefined") {
+        if (typeof storage.getUserToken() !== "undefined") {
             connect();
         }
     }
 
     function loginModal() {
-        if (typeof getUserToken() !== "undefined") {
+        if (typeof storage.getUserToken() !== "undefined") {
             DOM.userInfoDropdown.toggle();
         } else {
             DOM.modal.open();
@@ -88,13 +90,13 @@
         http.onload = function() {
             let res = JSON.parse(this.response);
             if (res.valid) {
-                setUser(res.data);
-                setUserToken(res.token);
+                storage.setUser(res.data);
+                storage.setUserToken(res.token);
                 DOM.modal.close();
                 connect();
             } else {
                 sendError(res.data);
-                clearUser();
+                storage.clearUser();
 
             }
         };
@@ -109,14 +111,14 @@
         http.onload = function() {
             let res = JSON.parse(this.response);
             if (res.valid) {
-                setUser(res.data);
-                setUserToken(res.token);
+                storage.setUser(res.data);
+                storage.setUserToken(res.token);
                 updateUserList(res.userList);
                 DOM.modal.switch("findFriendsModal");
                 connect();
             } else {
                 sendError(res.data);
-                clearUser();
+                storage.clearUser();
             }
         };
         e.preventDefault();
@@ -157,57 +159,110 @@
         socket.disconnect();
         DOM.userInfoLink.innerText = "Login / Register";
         DOM.conversationList.innerHTML = '';
-        DOM.messageList.innerHTML = '';
+        DOM.conversationMessages.innerHTML = '';
         DOM.userInfoDropdown.hide();
         DOM.modal.switch("loginModal");
-    }
-    function getUserData(parameter) {
-        if (typeof localStorage["user"] === "undefined"){
-            localStorage["user"] = JSON.stringify({});
-        }
-        if (typeof parameter !== "undefined") {
-            return JSON.parse(localStorage["user"])[parameter];
-        } else {
-            return JSON.parse(localStorage["user"])
-        }
     }
 
     function sendError(message) {
         alert(message);
     }
-    function setUserData(parameter, data) {
-        let user = getUserData();
-        user[parameter] = data;
-        localStorage["user"] = JSON.stringify(user);
-    }
 
-    function setUserToken(token) {
-        localStorage["userToken"] = token;
+    function Storage() {
+        this.getUserData = getUserData;
+        this.setUserData = setUserData;
+        this.setUserToken = setUserToken;
+        this.clearUser = clearUser;
+        this.getUserToken = getUserToken;
+        this.setUser = setUser;
+        this.setUserFriends = setUserFriends;
+        this.getUserFriends = getUserFriends;
+        this.setConversation = setConversation;
+        this.getConversation = getConversation;
+        this.getConversations = getConversations;
+        this.storeMessage = storeMessage;
 
-    }
-    
-    function clearUser() {
-        localStorage.removeItem('userToken');
-        localStorage["user"] = JSON.stringify({});
-    }
-    function getUserToken() {
-        return localStorage["userToken"];
-    }
-    function setUser(user){
-        localStorage["user"] = JSON.stringify(user);
-        DOM.userInfoLink.innerText = user.email;
-    }
-    function setUserFriends(friends) {
-        localStorage["friends"] = JSON.stringify(friends);
-    }
-    function getUserFriends() {
-        return JSON.parse(localStorage["friends"]);
+        function getUserData(parameter) {
+            if (typeof localStorage["user"] === "undefined"){
+                localStorage["user"] = JSON.stringify({});
+            }
+            if (typeof parameter !== "undefined") {
+                return JSON.parse(localStorage["user"])[parameter];
+            } else {
+                return JSON.parse(localStorage["user"])
+            }
+        }
+        function setUserData(parameter, data) {
+            let user = getUserData();
+            user[parameter] = data;
+            localStorage["user"] = JSON.stringify(user);
+        }
+
+        function setUserToken(token) {
+            localStorage["userToken"] = token;
+
+        }
+
+        function clearUser() {
+            localStorage.removeItem('userToken');
+            localStorage["user"] = JSON.stringify({});
+        }
+
+        function getUserToken() {
+            return localStorage["userToken"];
+        }
+
+        function setUser(user) {
+            localStorage["user"] = JSON.stringify(user);
+            DOM.userInfoLink.innerText = user.email;
+        }
+
+        function setUserFriends(friends) {
+            localStorage["friends"] = JSON.stringify(friends);
+        }
+
+        function getUserFriends() {
+            return JSON.parse(localStorage["friends"]);
+        }
+
+        function setConversation(conv) {
+            localStorage[conv.id] = JSON.stringify(conv);
+        }
+
+        function getConversation(convId) {
+            if (typeof localStorage[convId] !== "undefined") {
+                return JSON.parse(localStorage[convId]);
+            } else {
+                return false;
+            }
+        }
+
+        function getConversations() {
+            let convs = {};
+            for (var key in localStorage) {
+                if (key != "user" && key != "userToken" && key != "friends") {
+                    convs[key] = localStorage[key];
+                }
+            }
+            return convs;
+        }
+
+        function storeMessage(message) {
+            let conversation = {};
+            // pull existing conversation if there is one
+            if (storage.getConversation(message.conversationId) !== false) {
+                conversation = storage.getConversation(message.conversationId);
+            }
+            conversation.push(message);
+            storage.setConversation(conversation);
+        }
+
     }
 
     function serverUserData(data) {
         updateFriendsList(data.friendsList, "friendList");
         //updateConversationList(data.conversations);
-        setUser(data.userData);
+        storage.setUser(data.userData);
         DOM.userInfoLink.innerText = data.userData.email;
 
     }
@@ -222,7 +277,7 @@
         DOM.find("convFriendList");
         DOM.find("createConversationButton");
         DOM.createConversationButton.on("click", createConversation);
-        updateList(getUserFriends(), "convFriendList", "checkbox");
+        updateList(storage.getUserFriends(), "convFriendList", "checkbox");
 
         //
     }
@@ -234,66 +289,23 @@
         Array.prototype.forEach.call(checkboxes, function(el) {
             members.push(el.value);
         });
-        members.push(getUserData("id"));
+        members.push(storage.getUserData("id"));
         var data = {
-            userId: getUserData("id"),
+            userId: storage.getUserData("id"),
             users: members
         };
-        console.log(data);
         socket.emit(events.clientConversationCreate, data);
     }
-    function newGroupConversation() {
 
-    }
-    function removeUser(userData) {
-        console.log("User disconnected", userData);
-        let userDisplay = document.getElementById(userData.id);
-        delete users[userData.id];
-        DOM.conversationList.removeChild(userDisplay);
-    }
 
-    function addMessage(message) {
-        let li = document.createElement("li");
-        let text = document.createTextNode("<" + users[message.from].email + "> " + message.text);
-        li.appendChild(text);
-        DOM.messageList.appendChild(li);
-        storeMessage(message);
-    }
 
-    function storeMessage(message) {
-        let conversation = {};
-        // pull existing conversation if there is one
-        if (getConversation(message.conversationId) !== false) {
-            conversation = getConversation(message.conversationId);
-        }
-        conversation.push(message);
-        setConversation(conversation);
-    }
 
-    function setConversation(conv) {
-        localStorage[conv.id] = JSON.stringify(conv);
-    }
-    function getConversation(convId) {
-        if (typeof localStorage[convId] !== "undefined") {
-            return localStorage[convId];
-        } else {
-            return false;
-        }
-    }
-    function getConversations() {
-        let convs = {};
-        for (var key in localStorage) {
-            if (key != "user" && key != "userToken" && key != "friends") {
-                convs[key] = localStorage[key];
-            }
-        }
-        return convs;
-    }
+
 
     function updateConversationData(conv) {
-        setConversation(conv);
+        storage.setConversation(conv);
         if(!DOM.find("conv_" + conv.id)) {
-            DOM.createConversation(conv);
+            DOM.createConversation(conv, convClickCallback);
         }  else {
             DOM.updateConversation(conv);
         }
@@ -303,9 +315,14 @@
 
     }
     function userClickCallback(event) {
-        toConvId = event.target.parentElement.id;
+        currentUserId = event.target.parentElement.id;
     }
 
+    function convClickCallback(event) {
+        currentConversation = event.target.id.substr(5);
+
+        DOM.showConversation(storage.getConversation(currentConversation));
+    }
 
     function checkForEnter(event) {
         if (event.keyCode == 13) {
@@ -315,14 +332,14 @@
 
     function sendMsg() {
         let message = {
-            "from": getUserData("id"),
+            "from": storage.getUserData("id"),
             "text": DOM.messageBox.value,
             "timestamp": Date.now(),
-            "conversationId": toConvId
+            "conversationId": currentConversation
         };
         socket.emit(events.clientMessageSend, message);
         DOM.messageBox.value = "";
-        addMessage(message);
+        DOM.addMessage(message);
         storeMessage(message);
     }
 
@@ -353,7 +370,7 @@
     }
 
     function updateFriendsList(friends) {
-        setUserFriends(friends);
+        storage.setUserFriends(friends);
         updateList(friends, "friendList", "link");
     }
 

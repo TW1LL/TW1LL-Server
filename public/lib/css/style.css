@@ -85,7 +85,7 @@ ul li {
   flex-flow: column; }
   #content #messageInput {
     display: flex; }
-  #content #messageList {
+  #content #conversationMessages {
     flex: auto; }
 
 #sidepane a:hover {
@@ -170,6 +170,18 @@ input[type=text], input[type=password] {
 #registerError {
   font-size: 10px; }
 
+#conversationList {
+  margin: 0;
+  padding: 0; }
+
 .convLink {
   cursor: pointer;
-  border-bottom: 1px solid #80DEEA; }
+  border-bottom: 1px solid #80DEEA;
+  padding: 10px;
+  font-weight: bold; }
+
+.convMessage:nth-child(odd) {
+  background: #B2EBF2; }
+
+#body-text {
+  border-bottom: 1px solid #006064; }
