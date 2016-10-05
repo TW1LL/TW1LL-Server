@@ -97,7 +97,6 @@ function populateUsers() {
             resolve();
         });
     });
-
 }
 
 function connectSocket(socket) {
@@ -116,7 +115,6 @@ function connectSocket(socket) {
         socket.broadcast.emit(events.serverUserDisconnect, user.data);
         delete usersOnline[user.id];
     });
-
 }
 
 function createConversation(conversationRequest){
@@ -151,6 +149,14 @@ function createUserList() {
     return list;
 }
 
+function createFriendsList(user) {
+    let list = {};
+    for(let id in user.friends) {
+        list[id] = users[user.friends[id]].data;
+    }
+    return list;
+}
+
 function addFriends(data){
     let user = users[data.id];
     let friends = user.friends;
@@ -159,5 +165,5 @@ function addFriends(data){
             user.addFriend(friend);
         }
     });
-    user.socket.emit(events.serverSendFriendsList, user.friends);
+    user.socket.emit(events.serverSendFriendsList, createFriendsList(user));
 }
