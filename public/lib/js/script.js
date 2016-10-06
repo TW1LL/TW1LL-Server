@@ -156,14 +156,12 @@
         } else {
             return false;
         }
-
     }
 
     function logout() {
         storage.clearUser();
         DOM.logout();
         socket.disconnect();
-
     }
 
     function sendError(message) {
@@ -202,7 +200,6 @@
 
         function setUserToken(token) {
             localStorage["userToken"] = token;
-
         }
 
         function clearUser() {
@@ -262,9 +259,7 @@
         //updateConversationList(data.conversations);
         storage.setUser(data.userData);
         DOM.userInfoLink.innerText = data.userData.email;
-
     }
-
 
     function newConversation(e) {
         DOM["body-title"].innerHTML = '<h4>Start a new conversation</h4>';
@@ -276,8 +271,6 @@
         DOM.find("createConversationButton");
         DOM.createConversationButton.on("click", createConversation);
         updateList(storage.getUserFriends(), "convFriendList", "checkbox");
-
-        //
     }
 
     function createConversation() {
@@ -294,11 +287,6 @@
         };
         socket.emit(events.clientConversationCreate, data);
     }
-
-
-
-
-
 
     function updateConversationData(conv) {
         storage.setConversation(conv);
@@ -339,16 +327,23 @@
     }
 
     function updateUserList(list) {
+        console.log(list);
+        let clientUserId = storage.getUserData("id");
+        delete list[clientUserId];
+        console.log(list[clientUserId]);
+        for (let obj in list) {
+            console.log(typeof obj);
+        }
         updateList(list, "findFriendsList", "checkbox");
         DOM.modal.switch("findFriendsModal");
     }
-
-
+    
     function friendsModal() {
         DOM.modal.open();
         DOM.modal.switch("findFriendsModal");
         socket.emit(events.clientUserList, storage.getUserData("id"));
     }
+
     function addFriends() {
         console.log("adding friends...");
         var checkboxes = document.querySelectorAll('input[name="addFriend"]:checked');
@@ -378,6 +373,7 @@
             DOM.addUser(list[i], userClickCallback, type, location);
         }
     }
+
     function updateConversationList() {
         let conversations = storage.getConversations();
         for (var i in conversations) {
@@ -385,4 +381,5 @@
             DOM.createConversation(conv, convClickCallback);
         }
     }
+
 })();
