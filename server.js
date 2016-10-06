@@ -2,7 +2,6 @@
 let fs = require('fs');
 let express = require('express');
 let app = express();
-let jwt = require('jsonwebtoken');
 let jwtIO = require('socketio-jwt');
 let options = {
     key: fs.readFileSync('./https/file.pem'),
@@ -36,6 +35,7 @@ let events = {
     clientUserFriendAdd: "client user friend add",
     clientUserFriendRemove: "client user friend remove",
     clientConversationSync: "client conversation sync",
+    clientRequestConversation: "client request conversation"
 };
 
 let db = require('./db/Database');
@@ -71,8 +71,16 @@ io.on('connection', jwtIO.authorize({
 io.on('authenticated', connectSocket);
 
 
+function populateConversations() {
+    log.event("Populating conversations list");
+    return new Promise ((resolve) => {
+        conversations = db.Conversation.getAll();
+        return resolve();
+    })
+}
+
 function connectSocket(socket) {
-    let user = users[socket.decoded_token.id];
+    let user = db.User.all[socket.decoded_token.id];
     usersOnline[user.id] = user.data;
     user.socket = socket;
     log.event(user.email+" connected.");
@@ -82,8 +90,9 @@ function connectSocket(socket) {
     socket.on(events.clientConversationSync, syncConversations);
     socket.on(events.clientUserFriendAdd, addFriends);
     socket.on(events.clientUserList, sendUserList);
-    socket.on(events.clientMessageSend,  (message) => { users[message.from].send(message); });
+    socket.on(events.clientMessageSend,  (message) => { db.User.all[message.from].send(message); });
     socket.on(events.clientConversationCreate, createConversation);
+    socket.on(events.clientRequestConversation, provideConversation);
     socket.on("disconnect", function () {
         log.event("User " + user.email + " disconnected");
         delete usersOnline[user.id];
@@ -93,7 +102,7 @@ function connectSocket(socket) {
 function createConversation(conversationRequest){
     let members = [];
     for (let i in conversationRequest.users) {
-        members[i] = users[conversationRequest.users[i]].email;
+        members[i] = db.User.all[conversationRequest.db.User.all[i]].email;
     }
     let name = members.join(", ");
 
@@ -112,13 +121,13 @@ function createConversation(conversationRequest){
                 }
             });
     }).then((conv) => {
-            users[conversationRequest.userId].socket.emit(events.serverConversationData, conv)
+            db.User.all[conversationRequest.userId].socket.emit(events.serverConversationData, conv)
         }
     );
 }
 
 function send(message){
-    log.message(users[message.from].email + " > " + users[message.conversationId].email);
+    log.message(db.User.all[message.from].email + " > " + db.User.all[message.conversationId].email);
     db.Conversation.getById(message.conversationId)
         .then((row) => {
         for (let user in row.users){
@@ -136,13 +145,13 @@ function sendUserData(user) {
 }
 
 function sendUserList(id) {
-    users[id].socket.emit(events.serverUserList, db.User.prepareAll());
+    db.User.all[id].socket.emit(events.serverUserList, db.User.prepareAll());
 }
 
 function createUserList() {
     let list = {};
     for(var id in users) {
-        list[id] = users[id].data;
+        list[id] = db.User.all[id].data;
     }
     return list;
 }
@@ -151,7 +160,7 @@ function createFriendsList(user) {
     log.recurrent("Creating friends list for " + user.id);
     let list = {};
     for(let id in user.friends) {
-        let friend = users[user.friends[id]];
+        let friend = db.User.all[user.friends[id]];
         list[friend.id] = friend.data;
     }
     return list;
@@ -159,7 +168,7 @@ function createFriendsList(user) {
 
 function addFriends(data){
     log.event("Adding friends");
-    let user = users[data.id];
+    let user = db.User.all[data.id];
     if (user.friends === null) {
         user.public.friends = [];
     }
@@ -179,7 +188,7 @@ function syncConversations(conversations) {
     log.recurrent("Syncing conversations for " + user.id);
     log.debug(clientConvs);
     // get conversations from server
-    let serverConvs = users[user.id].conversations;
+    let serverConvs = db.User.all[user.id].conversations;
     let missingConvs = {};
     for (let convId in serverConvs) {
         if (convId in clientConvs) {
@@ -194,4 +203,10 @@ function syncConversations(conversations) {
             missingConvs[convId] = serverConvs[convId];
         }
     }
+}
+
+function provideConversation(convRequest) {
+    let userId = convRequest.user;
+    let conversationId = convRequest.conversation;
+    let conversation = db.Conversation.get(conversationId);
 }
