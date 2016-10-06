@@ -23,6 +23,7 @@ class User {
             this.public.friends = data.friends;
             this.nickname = data.nickname;
             this.conversations = data.conversations;
+            console.log("Friends", data.friends);
         }
     }
 

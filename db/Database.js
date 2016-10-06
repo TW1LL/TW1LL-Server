@@ -19,7 +19,7 @@ class Database {
 
         this.tableCreateStatements = {
             "createUserTable": "CREATE TABLE IF NOT EXISTS users (id TEXT, email TEXT, friends TEXT, nickname TEXT, conversations TEXT, PRIMARY KEY (id))",
-            "createMessageTable": "CREATE TABLE IF NOT EXISTS messages (id TEXT, conversation_id TEXT, to_id TEXT, from_id TEXT, message_text TEXT, timestamp TEXT, PRIMARY KEY (id))",
+            "createMessageTable": "CREATE TABLE IF NOT EXISTS messages (id TEXT, conversation_id TEXT, from_id TEXT, message TEXT, timestamp TEXT, PRIMARY KEY (id))",
             "createUserPasswordTable": "CREATE TABLE IF NOT EXISTS user_passwords (id TEXT, password_salt TEXT, password_hash TEXT, PRIMARY KEY (id))",
             "createConversationsTable": "CREATE TABLE IF NOT EXISTS conversations (id TEXT, members TEXT, name TEXT)"
         };
@@ -29,18 +29,21 @@ class Database {
             "createUser": "INSERT INTO users VALUES (?, ?, ?, ?, ?)",
             "getUser": "SELECT * FROM users WHERE id = ?",
             "findIdByEmail": "SELECT id FROM users WHERE email = ?",
+            "saveFriends": "UPDATE users SET friends = ? WHERE id = ?",
+            "updateConversations": "UPDATE users SET conversations = ? WHERE id = ?",
+            "getConversations": "SELECT conversations FROM users WHERE id = ?",
+            // user password queries
             "retrievePassword": "SELECT * FROM user_passwords WHERE id = ?",
             "createNewPassword": "INSERT INTO user_passwords VALUES (?, ?, ?)",
             "updatePassword": "UPDATE user_passwords SET password_salt = ?, password_hash = ? WHERE id = ?",
-            "saveFriends": "UPDATE users SET friends = ? WHERE id = ?",
             // message queries
-            "createMessage": "INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)",
-            "retrieveMessage": "SELECT * FROM messages WHERE to_id = $id or from_id = $id",
-            "createConversation": "INSERT INTO conversations VALUES (?, ?, ?)",
+            "createMessage": "INSERT INTO messages VALUES (?, ?, ?, ?, ?)",
+            "retrieveMessagesByConversation": "SELECT * FROM messages WHERE conversation_id = ?",
             // conversation queries
+            "createConversation": "INSERT INTO conversations VALUES (?, ?, ?)",
             "retrieveConversationById": "SELECT * FROM conversations WHERE id = ?",
             "retrieveConversationByMembers": "SELECT * FROM conversations WHERE members = ( ? )",
-            "retrieveConversationByIdList": "SELECT * FROM conversations WHERE id IN ( ? );"
+            "retrieveConversationByIdList": "SELECT * FROM conversations WHERE id IN ( ? )"
         };
 
         this.prepareDB();
@@ -76,10 +79,6 @@ class Database {
             this.queries = statements;
             resolve();
         })
-    }
-
-    flattenArray(array){
-        return "'" + array.join("', '") + "'";
     }
 }
 

@@ -70,15 +70,6 @@ io.on('connection', jwtIO.authorize({
 
 io.on('authenticated', connectSocket);
 
-
-function populateConversations() {
-    log.event("Populating conversations list");
-    return new Promise ((resolve) => {
-        conversations = db.Conversation.getAll();
-        return resolve();
-    })
-}
-
 function connectSocket(socket) {
     let user = db.User.all[socket.decoded_token.id];
     usersOnline[user.id] = user.data;
@@ -145,7 +136,8 @@ function sendUserData(user) {
 }
 
 function sendUserList(id) {
-    db.User.all[id].socket.emit(events.serverUserList, db.User.prepareAll());
+    db.User.prepareAll()
+        .then((users) => db.User.all[id].socket.emit(events.serverUserList, users));
 }
 
 function createUserList() {

@@ -2,11 +2,13 @@
 
 let Log = require('./../Log');
 let log = new Log("high");
+let Conversation = require('./../Conversation');
 
-class Conversation {
+class ConversationDB {
 
     constructor(context) {
         this.context = context;
+        this.all = this.getAll();
     }
 
     create(id, users, name) {
@@ -47,7 +49,7 @@ class Conversation {
                 log.debug(err);
                 log.debug(row);
                 if (row) {
-                    return resolve(new Conversation(row.members, row.name, row.id));
+                    return resolve(new ConversationDB(row.members, row.name, row.id));
                 } else {
                     return reject(err);
                 }
@@ -75,6 +77,25 @@ class Conversation {
             })
         })
     }
+
+    getAll() {
+        let getAllConversations = "SELECT * FROM conversations";
+        log.event("Getting all conversations");
+        return new Promise ((resolve, reject) => {
+            this.context.db.all(getAllConversations, [], function(err, rows) {
+                if (rows) {
+                    let conversations = {};
+                    for (let data in rows) {
+                        let conversation = new Conversation();
+                        conversations[data.id] = rows[data];
+                    }
+                    return resolve(conversations);
+                } else {
+                    return reject(err);
+                }
+            })
+        })
+    }
 }
 
-module.exports = Conversation;
+module.exports = ConversationDB;

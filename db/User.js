@@ -16,7 +16,7 @@ class UserDB {
     saveFriends(user) {
         log.recurrent("Saving friends");
         log.debug(user);
-        let friends = this.context.flattenArray(user.friends);
+        let friends = user.friends.join(', ');
         return new Promise((resolve, reject) => {
             this.context.queries.saveFriends.run([friends, user.id], (err) => {
                 if (err) {
@@ -147,8 +147,8 @@ class UserDB {
                 if (userPWData) {
                     bcrypt.compare(params.password, userPWData.password_hash, (err, res) => {
                         if (res) {
-                            log.event("Auth Success! Generating user token.");
                             let user = this.all[userPWData.id].data;
+                            log.event("Auth Success! Generating user token.");
                             data = {
                                 valid: true,
                                 token: jwt.sign(user, 'super_secret code', {expiresIn: "7d"}),
@@ -209,6 +209,22 @@ class UserDB {
                 }
                 return resolve(list);
             }
+        })
+    }
+
+    getConversations(id) {
+        log.recurrent("Getting conversations for " + id);
+        return new Promise((resolve, reject) => {
+            let conversations = {};
+            this.context.queries.getConversations(id, (convIdString) => {
+                let convIds = convIdString.split(', ');
+                for (let convId in convIds) {
+                    let messages = this.context.Message.getConversation(convId);
+                    conversations[convId] = messages;
+                }
+                Promise.all(conversations)
+                    .then(resolve(conversations));
+            });
         })
     }
 }

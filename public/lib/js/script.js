@@ -194,7 +194,7 @@
             }
         }
         function setUserData(parameter, data) {
-            let user = getUserData();
+            let user = storage.getUserData();
             user[parameter] = data;
             localStorage["user"] = JSON.stringify(user);
         }
@@ -353,7 +353,7 @@
     function friendsModal() {
         DOM.modal.open();
         DOM.modal.switch("findFriendsModal");
-        socket.emit(events.clientUserList, getUserData("id"));
+        socket.emit(events.clientUserList, storage.getUserData("id"));
     }
     function addFriends() {
         console.log("adding friends...");
@@ -363,7 +363,7 @@
             friends.push(el.value);
         });
         var data = {
-            id: getUserData("id"),
+            id: storage.getUserData("id"),
             friends: friends
         };
         socket.emit(events.clientUserFriendAdd, data);
