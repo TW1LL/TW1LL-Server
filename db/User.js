@@ -4,13 +4,19 @@ let Log = require('./../Log');
 let log = new Log("high");
 let bcrypt = require('bcrypt-nodejs');
 let jwt = require('jsonwebtoken');
-let User = require('./../User');
+let User = require('./../Models/User');
 class UserDB {
 
     constructor(context) {
         this.context = context;
-        this.all = {};
-        this.prepareAll();
+        this.ready = new Promise((resolve) => {
+            this.getAll()
+                .then((users) => {
+                    this.all = users;
+                    resolve(true);
+                });
+        });
+
     }
 
     saveFriends(user) {
@@ -216,7 +222,7 @@ class UserDB {
             this.context.queries.getConversations(id, (convIdString) => {
                 let convIds = convIdString.split(', ');
                 for (let convId in convIds) {
-                    let messages = this.context.Message.getConversation(convId);
+                    let messages = this.context.Message.getMessagesForConversation(convId);
                     conversations[convId] = messages;
                 }
                 Promise.all(conversations)

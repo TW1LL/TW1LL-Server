@@ -2,7 +2,7 @@
 
 let Log = require('./../Log');
 let log = new Log("high");
-let Message = require('./../Message');
+let Message = require('./../Models/Message');
 
 class MessageDB {
 
@@ -17,7 +17,7 @@ class MessageDB {
         return this.context.queries.createMessage.run(data);
     }
 
-    getConversation(convId) {
+    getMessagesForConversation(convId) {
         log.recurrent("Getting messages for conversation " + convId);
         return new Promise((resolve, reject) => {
             let messages = {};
