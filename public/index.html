@@ -18,7 +18,6 @@
             <div id="userInfoDropdown">
                 <ul>
                     <li><a href="#">Account</a></li>
-                    <li id="addFriendsLink"><a href="#">Add Friends</a></li>
                     <li><a href="#">Settings</a></li>
                     <li><a href="#" id="userLogout">Logout</a></li>
                 </ul>
@@ -26,20 +25,21 @@
         </div>
         <div id="container">
             <div id="sidepane">
-                <div id="conversations">
-                    <h3>Conversations</h3>
+                <div id="conversations" class="full">
+                    <h3 id="toggleConversationList">Conversations</h3>
                     <div id="newConvButton" class="convLink">+ New Conversation</div>
                     <ul id="conversationList"></ul>
                 </div>
-                <div id="friends">
-                    <h3>Friends</h3>
+                <div id="friends" class="min">
+                    <h3 id="toggleFriendList">Friends</h3>
+                    <div id="addFriendsLink" class="convLink">+ Add Friend</div>
                     <ul id="friendList"></ul>
                 </div>
             </div>
             <div id="content">
                 <div id="body">
-                    <div id="body-title"><h4>Name of Conversation</h4></div>
-                    <div id="body-text">Sub-text of conversation</div>
+                    <div id="body-title"><h4>Please login to TW1LL-MSG</h4></div>
+                    <div id="body-text"></div>
                 </div>
                 <div id="conversationMessages">
                 </div>

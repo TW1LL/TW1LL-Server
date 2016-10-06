@@ -64,6 +64,7 @@ ul li {
   display: flex; }
 
 #sidepane {
+  transition: all 0.5s;
   background: #B2EBF2;
   color: #000000;
   flex: 1;
@@ -71,10 +72,15 @@ ul li {
   display: flex;
   flex-flow: column;
   align-items: stretch; }
-  #sidepane #conversations {
-    flex: 1; }
-  #sidepane #friends {
-    flex: 0.1; }
+  #sidepane div h3 {
+    margin: 5px auto 5px auto;
+    cursor: pointer; }
+  #sidepane #conversations, #sidepane #friends {
+    transition: all 0.5s; }
+  #sidepane .full {
+    flex: 1.0; }
+  #sidepane .min {
+    flex: 0.01; }
 
 #content {
   background: #E0F7FA;
@@ -87,6 +93,9 @@ ul li {
     display: flex; }
   #content #conversationMessages {
     flex: auto; }
+  #content #body div {
+    padding-left: 10px;
+    padding-right: 10px; }
 
 #sidepane a:hover {
   text-decoration: underline;
@@ -153,7 +162,7 @@ input[type=text], input[type=password] {
   justify-content: space-between; }
   .modal-body div {
     display: flex;
-    flex-flow: column; }
+    flex-flow: column wrap; }
     .modal-body div form {
       display: table; }
     .modal-body div p {

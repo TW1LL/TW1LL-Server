@@ -7,8 +7,12 @@ function Dom(storage) {
     self.modal = new modal(self);
     self.addUser = addUser;
     self.createConversation =  createConversation;
+    self.createConversationLink = createConversationLink;
     self.showConversation = showConversation;
+    self.toggleFriendConvList = toggleFriendConvList;
     self.addMessage = addMessage;
+    self.logout = logout;
+    self.clearBody = clearBody;
     function find(id) {
         if (typeof self[id] === "undefined") {
             return build(id);
@@ -43,7 +47,7 @@ function Dom(storage) {
             }
         }
         function hide() {
-            self[id].tmp.display = self[id].style.display;
+            self[id].tmp.display = window.getComputedStyle(self[id]).getPropertyValue("display");
             self[id].style.display = "none";
         }
         function show() {
@@ -114,6 +118,14 @@ function Dom(storage) {
         self["conv_"+message.conversationId].appendChild(li);
         storage.storeMessage(message);
     }
+    function createConversationLink(conv, callback) {
+        let li = document.createElement("li");
+        li.setAttribute("id", "link_" + conv.id);
+        li.setAttribute("class", "convLink");
+        li.innerHTML = conv.name;
+        li.addEventListener("click", callback);
+        self.conversationList.appendChild(li);
+    }
     function createConversation(conv, callback) {
         let li = document.createElement("li");
         li.setAttribute("id", "link_" + conv.id);
@@ -160,5 +172,32 @@ function Dom(storage) {
     function updateConversationMessages(conv) {
     }
 
+    function toggleFriendConvList() {
+        self.friends.classList.toggle("min");
+        self.friends.classList.toggle("full");
+        self.friendList.toggle();
+        self.addFriendsLink.toggle();
+        self.conversations.classList.toggle("min");
+        self.conversations.classList.toggle("full");
+        self.conversationList.toggle();
+        self.newConvButton.toggle();
+
+    }
+
     return self;
+
+    function clearBody() {
+        self["body-title"].innerHTML = "<h4> Please Login to TW1LL-MSG </h4>";
+        self["body-text"].innerHTML = '';
+    }
+    function logout() {
+        self.userInfoLink.innerText = "Login / Register";
+        self.conversationList.innerHTML = '';
+        self.conversationMessages.innerHTML = '';
+        self.friendList.innerHTML = '';
+        self.clearBody();
+        self.sidepane.hide();
+        self.userInfoDropdown.hide();
+        self.modal.switch("loginModal");
+    }
 }

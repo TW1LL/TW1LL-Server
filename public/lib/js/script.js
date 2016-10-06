@@ -11,13 +11,13 @@
 
     function ready() {
         DOM.batchFind(
-            ["messageBox", "friendList", "conversationMessages", "conversationList", "newConvButton",
+            ["messageBox", "friendList", "conversationMessages", "conversationList", "newConvButton", "newFriendButton",
                 "loginModal","findFriendsModal", "modal-title", "findFriendsList", "findFriendsSubmit", "addFriendsLink",
                 "loginSubmit", "loginEmail", "loginPassword",
                 "registerSubmit", "registerEmail", "registerPassword", "registerPassword2", "registerError",
                 "userInfo", "userInfoDropdown", "userInfoLink",
                 "userLogout",
-                "body-title", "body-text"
+                "body-title", "body-text", "toggleFriendList", "toggleConversationList", "friends", "conversations", "sidepane"
             ]);
         DOM.modal.init();
         DOM.userInfoDropdown.hide();
@@ -27,7 +27,11 @@
         DOM.findFriendsSubmit.on("click", addFriends);
         DOM.addFriendsLink.on("click", friendsModal);
         DOM.newConvButton.on("click", newConversation);
+        DOM.addFriendsLink.hide();
+        DOM.sidepane.hide();
         DOM.registerSubmit.on("click", register);
+        DOM.toggleFriendList.on("click", DOM.toggleFriendConvList);
+        DOM.toggleConversationList.on("click", DOM.toggleFriendConvList)
         DOM.registerSubmit.disabled = true;
         DOM.userInfoLink.on("click", loginModal);
         DOM.messageBox.on("keypress", checkForEnter);
@@ -55,6 +59,7 @@
     }
 
     function init(eventList) {
+        DOM.sidepane.show();
         events = eventList;
         socket.emit(events.clientConversationSync, [storage.getUserData(), storage.getConversations()]);
         //socket.on(events.serverUserConnect, addUser);
@@ -154,13 +159,10 @@
     }
 
     function logout() {
-        clearUser();
+        storage.clearUser();
+        DOM.logout();
         socket.disconnect();
-        DOM.userInfoLink.innerText = "Login / Register";
-        DOM.conversationList.innerHTML = '';
-        DOM.conversationMessages.innerHTML = '';
-        DOM.userInfoDropdown.hide();
-        DOM.modal.switch("loginModal");
+
     }
 
     function sendError(message) {
@@ -384,6 +386,12 @@
     }
     function updateConversationList() {
         let conversations = storage.getConversations();
-
+        for (var i in conversations) {
+            let conv = {
+                id: conversations[i].id,
+                name: conversations[i].name
+            }
+            DOM.createConversationLink(conv, convClickCallback);
+        }
     }
 })();

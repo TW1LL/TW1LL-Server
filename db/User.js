@@ -148,11 +148,12 @@ class UserDB {
                     bcrypt.compare(params.password, userPWData.password_hash, (err, res) => {
                         if (res) {
                             log.event("Auth Success! Generating user token.");
+                            let user = this.all[userPWData.id].data;
                             data = {
                                 valid: true,
-                                token: jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"}),
+                                token: jwt.sign(user, 'super_secret code', {expiresIn: "7d"}),
                                 id: userPWData.id,
-                                data: this.all[userPWData.id].data
+                                data: user
                             };
                             return resolve(data);
                         } else {

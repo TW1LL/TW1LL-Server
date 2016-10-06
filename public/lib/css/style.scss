@@ -76,6 +76,7 @@ ul li {
     display: flex;
 }
 #sidepane {
+    transition: all 0.5s;
     background: $light_bg2;
     color: $light_font1;
     flex: 1;
@@ -84,13 +85,25 @@ ul li {
     flex-flow: column;
     align-items: stretch;
 
-    #conversations {
-        flex: 1;
+    div h3 {
+        margin: 5px auto 5px auto;
+        cursor: pointer;
     }
-    #friends {
-        flex: 0.1;
+    #conversations, #friends{
+        transition: all 0.5s;
     }
+    .full {
+        flex: 1.0;
+    }
+
+    .min {
+        flex: 0.01;
+    }
+
+
 }
+
+
 #content {
     background: $light_bg1;
     color: $light_font1;
@@ -106,6 +119,10 @@ ul li {
         flex: auto;
     }
 
+    #body div {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
 
 }
 
@@ -179,7 +196,7 @@ input[type=text], input[type=password] {
     justify-content: space-between;
     div {
         display: flex;
-        flex-flow: column;
+        flex-flow: column wrap;
         form {
             display: table;
         }
@@ -220,4 +237,6 @@ input[type=text], input[type=password] {
 }
 #body-text {
     border-bottom: 1px solid $light_border1;
+}
+.hidden {
 }
