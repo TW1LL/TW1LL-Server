@@ -10,9 +10,9 @@ let options = {
 let http = require('https').createServer(options, app);
 let io = require('socket.io')(http);
 let Log = require('./Log'),
-    User = require('./User'),
-    Message = require('./Message'),
-    Conversation = require('./Conversation');
+    User = require('./Models/User'),
+    Message = require('./Models/Message'),
+    Conversation = require('./Models/Conversation');
 
 let config = {
     serverPort: 443,
@@ -58,8 +58,12 @@ app.post('/register/:email/:pass', function (req,res) {
     db.User.register(req.params)
     .then(db.User.authorize.bind(db.User))
     .then((auth) => {
-        auth.userList = db.User.prepareAll();
-        res.json(auth);
+        db.User.prepareAll()
+            .then((users) => {
+                auth.data = users;
+                res.json(auth);
+            }
+        );
     });
 });
 
@@ -106,7 +110,7 @@ function createConversation(conversationRequest){
                     return resolve(conversation);
                 } else {
                     conversation = new Conversation(conversationRequest.users, name);
-                    db.Conversation.create(conversation.id, conversationRequest.users).then(()=>{
+                    db.Conversation.create(conversation.id, conversationRequest.users, name).then(()=>{
                         return resolve(conversation);
                     });
                 }
@@ -118,6 +122,7 @@ function createConversation(conversationRequest){
 }
 
 function send(message){
+    message = new Message(message.from, message.text, message.conversationId);
     console.log(db.Conversation.all);
     console.log(message.conversationId);
     log.message(db.User.all[message.from].email + " > " + db.Conversation.all[message.conversationId].name);
