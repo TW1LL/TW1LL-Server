@@ -43,38 +43,22 @@ let log = new Log(config.logLevel);
 
 http.listen(config.serverPort, function() {
     log.event('HTTPS server started. Listening on port ' + config.serverPort);
-    populateUsers();
 });
 
 app.use(express.static(__dirname + '/public'));
 
 app.post('/login/:email/:pass', function (req,res) {
     log.event('Authorizing user...');
-
-    db.User.authorize({email: req.params.email, password: req.params.pass}).then((auth) => {
-        if (auth.valid) {
-            auth.data = users[auth.id].data;
-            auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
-            log.event('Authorization successful.');
-        }
-        res.json(auth);
-    });
+    let data = {email: req.params.email, password: req.params.pass};
+    db.User.authorize(data).then((auth) => res.json(auth));
 });
 
 app.post('/register/:email/:pass', function (req,res) {
     log.event('Registering user...');
-    let user = new User(send);
-    db.User.register(user, req.params)
+    db.User.register(req.params)
     .then(db.User.authorize.bind(db.User))
     .then((auth) => {
-        if (auth.valid) {
-            users[user.id] = user;
-            auth.data = user.data;
-            auth.token = jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"});
-        }
-        log.recurrent("Authorization status " + auth.valid);
-        log.debug(auth.data);
-        auth.userList = createUserList();
+        auth.userList = db.User.prepareAll();
         res.json(auth);
     });
 });
@@ -86,18 +70,6 @@ io.on('connection', jwtIO.authorize({
 
 io.on('authenticated', connectSocket);
 
-function populateUsers() {
-    log.event("Populating users list");
-    return new Promise ((resolve) => {
-        db.User.getAll().then((userList) => {
-            userList.forEach((data) => {
-                let user = new User(send, data);
-                users[user.id] = user;
-            });
-            return resolve();
-        });
-    });
-}
 
 function connectSocket(socket) {
     let user = users[socket.decoded_token.id];
@@ -164,7 +136,7 @@ function sendUserData(user) {
 }
 
 function sendUserList(id) {
-    users[id].socket.emit(events.serverUserList, createUserList());
+    users[id].socket.emit(events.serverUserList, db.User.prepareAll());
 }
 
 function createUserList() {

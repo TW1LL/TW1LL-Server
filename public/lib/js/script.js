@@ -64,7 +64,7 @@
         socket.on(events.serverMessageReceive, DOM.addMessage);
         socket.on(events.serverUserFriendsList, updateFriendsList);
         socket.on(events.serverConversationData, updateConversationData);
-
+        updateConversationList();
         socket.on("disconnect", function(){
             socket.disconnect();
         })
@@ -382,5 +382,9 @@
         for (let i in list) {
             DOM.addUser(list[i], userClickCallback, type, location);
         }
+    }
+    function updateConversationList() {
+        let conversations = getCOnversations();
+        
     }
 })();

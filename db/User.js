@@ -3,11 +3,14 @@
 let Log = require('./../Log');
 let log = new Log("high");
 let bcrypt = require('bcrypt-nodejs');
-
-class User {
+let jwt = require('jwt');
+let User = require('./../User');
+class UserDB {
 
     constructor(context) {
         this.context = context;
+        this.all = {};
+        this.prepareAll();
     }
 
     saveFriends(user) {
@@ -90,11 +93,13 @@ class User {
         });
     }
 
-    register(user, params) {
+    register(params) {
         return new Promise((resolve) => {
             bcrypt.genSalt(10, (err, salt) => {
                 bcrypt.hash(params.pass, salt, null, (err, hash) => {
+                    let user = new User(sendMessage);
                     user.email = params.email;
+                    this.all[user.id] = user;
                     this.create(user).then(() => {
                         this.createNewPassword(user.id, salt, hash).then(() => {
                             return resolve({email: params.email, password: params.pass});
@@ -119,26 +124,78 @@ class User {
         });
     }
 
-    authorize(data) {
+    authorize(params) {
         return new Promise((resolve) => {
-            this.findIdByEmail(data.email).then(this.getPassword.bind(this)).then((userPWData) => {
+            this.findIdByEmail(params.email).then(this.getPassword.bind(this)).then((userPWData) => {
                 log.debug("Password lookup result");
                 log.debug(userPWData);
+                let data;
                 if (userPWData) {
-                    bcrypt.compare(data.password, userPWData.password_hash, (err, res) => {
+                    bcrypt.compare(params.password, userPWData.password_hash, (err, res) => {
                         if (res) {
-                            log.event("User authorized");
-                            return resolve({valid: true, id: userPWData.id, email: data.email})
+                            log.event("Auth Success! Generating user token.");
+                            data = {
+                                valid: true,
+                                token: jwt.sign(auth.data, 'super_secret code', {expiresIn: "7d"}),
+                                id: userPWData.id,
+                                data: this.all[userPWData.id].data
+                            };
+                            return resolve(data);
                         } else {
-                            return resolve({valid: false, data: "Password doesn't match."})
+                            data = {
+                                valid: false,
+                                data: "Password doesn't match."
+                            };
+                            return resolve(data);
                         }
                     });
                 } else {
-                    return resolve({valid: false, data: "User not found."});
+                    data = {
+                        valid: false,
+                        data: "No User found with that email."
+                    };
+                    return resolve(data);
                 }
             });
         })
     }
+
+    sendMessage() {
+
+    }
+
+    prepare(userId) {
+        return new Promise((resolve) => {
+            if (typeof this.all[userId] === "undefined") {
+                this.get(id).then((user) => {
+                    this.all[user.id] = user;
+                    return resolve(user.data);
+                });
+            } else {
+                return resolve(this.all[userId].data);
+            }
+        });
+    }
+    prepareAll() {
+        return new Promise((resolve)=> {
+            if (this.all.length == 0) {
+                this.getAll().then((users) => {
+                    this.all = users;
+                    let list = {};
+                    for (var id in this.all) {
+                        list[id] = this.all[id].data;
+                    }
+                    return resolve(list);
+                });
+            } else {
+                let list = {};
+                for (var id in this.all) {
+                    list[id] = this.all[id].data;
+                }
+                return resolve(list);
+            }
+        })
+    }
 }
 
-module.exports = User;
+module.exports = UserDB;
