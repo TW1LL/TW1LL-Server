@@ -4,7 +4,7 @@ let uuid = require('uuid');
 let Message = require('./Message');
 class User {
 
-    constructor(send,  data) {
+    constructor(data) {
         this._id = uuid.v1(); // underscore infers private
         this.public = {
             id: this._id,
@@ -12,20 +12,26 @@ class User {
             friends: [],
             nickname: null
         };
-        this.conversations = [];
+        this.conversations = null;
         this.socket = null;
-        this.sendCallback = send;
 
         if(typeof data !== "undefined") {
             this._id = data.id;
             this.public.id = data.id;
             this.email = data.email;
             this.nickname = data.nickname;
-            if(data.friends != null) {
+            if(data.friends != null ) {
                 data.friends = data.friends.split(', ');
+            } else if (typeof data.friends === "string") {
+                data.friends = [data.friends];
+            }
+             else {
+                data.friends = [];
             }
             if(data.conversations != null) {
                 data.conversations = data.conversations.split(', ');
+            } else if (typeof data.conversations === "string") {
+                data.conversations = [data.conversations];
             }
             this.public.friends = data.friends;
 
@@ -35,8 +41,7 @@ class User {
     }
 
     send(message) {
-        this.conversations.push(message);
-        this.sendCallback(message);
+        //this.conversations[message.conversationId].messages.push(message);
     }
 
     receive(newMessage) {

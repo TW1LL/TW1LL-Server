@@ -16,7 +16,7 @@ let Log = require('./Log'),
 
 let config = {
     serverPort: 443,
-    logLevel: "high"
+    logLevel: "med-high"
 };
 let usersOnline = {}, users = {};
 let events = {
@@ -81,7 +81,7 @@ function connectSocket(socket) {
     socket.on(events.clientConversationSync, syncConversations);
     socket.on(events.clientUserFriendAdd, addFriends);
     socket.on(events.clientUserList, sendUserList);
-    socket.on(events.clientMessageSend,  (message) => { db.User.all[message.from].send(message); });
+    socket.on(events.clientMessageSend,  send );
     socket.on(events.clientConversationCreate, createConversation);
     socket.on(events.clientRequestConversation, provideConversation);
     socket.on("disconnect", function () {
@@ -93,7 +93,7 @@ function connectSocket(socket) {
 function createConversation(conversationRequest){
     let members = [];
     for (let i in conversationRequest.users) {
-        members[i] = db.User.all[conversationRequest.db.User.all[i]].email;
+        members[i] = db.User.all[conversationRequest.users[i]].email;
     }
     let name = members.join(", ");
 
@@ -112,20 +112,22 @@ function createConversation(conversationRequest){
                 }
             });
     }).then((conv) => {
-            db.User.all[conversationRequest.userId].socket.emit(events.serverConversationData, conv)
-        }
-    );
+        db.Conversation.all[conv.id] = conv;
+        db.User.all[conversationRequest.userId].socket.emit(events.serverConversationData, conv)
+    });
 }
 
 function send(message){
-    log.message(db.User.all[message.from].email + " > " + db.User.all[message.conversationId].email);
-    db.Conversation.getById(message.conversationId)
-        .then((row) => {
-        for (let user in row.users){
-            user.receive(message);
-        }
-        db.Message.create(message);
-    });
+    console.log(db.Conversation.all);
+    console.log(message.conversationId);
+    log.message(db.User.all[message.from].email + " > " + db.Conversation.all[message.conversationId].name);
+    db.User.all[message.from].send(message);
+    let row = db.Conversation.all[message.conversationId];
+    for (let user in row.users){
+        user.receive(message);
+    }
+    db.Message.create(message);
+
 }
 
 function sendUserData(user) {

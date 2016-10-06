@@ -243,19 +243,15 @@
             let convs = {};
             for (var key in localStorage) {
                 if (key != "user" && key != "userToken" && key != "friends") {
-                    convs[key] = localStorage[key];
+                    convs[key] = JSON.parse(localStorage[key]);
                 }
             }
             return convs;
         }
 
         function storeMessage(message) {
-            let conversation = {};
-            // pull existing conversation if there is one
-            if (storage.getConversation(message.conversationId) !== false) {
-                conversation = storage.getConversation(message.conversationId);
-            }
-            conversation.push(message);
+            var conversation = storage.getConversation(message.conversationId);
+            conversation['messages']['tmp']= message;
             storage.setConversation(conversation);
         }
 
@@ -313,9 +309,6 @@
         }
     }
 
-    function updateConversationList(convs) {
-
-    }
     function userClickCallback(event) {
         currentUserId = event.target.parentElement.id;
     }
@@ -342,7 +335,7 @@
         socket.emit(events.clientMessageSend, message);
         DOM.messageBox.value = "";
         DOM.addMessage(message);
-        storeMessage(message);
+        storage.storeMessage(message);
     }
 
     function updateUserList(list) {
@@ -388,11 +381,8 @@
     function updateConversationList() {
         let conversations = storage.getConversations();
         for (var i in conversations) {
-            let conv = {
-                id: conversations[i].id,
-                name: conversations[i].name
-            }
-            DOM.createConversationLink(conv, convClickCallback);
+            let conv = conversations[i];
+            DOM.createConversation(conv, convClickCallback);
         }
     }
 })();

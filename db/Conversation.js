@@ -8,7 +8,7 @@ class ConversationDB {
 
     constructor(context) {
         this.context = context;
-        this.all = this.getAll();
+        this.getAll().then((convs) => this.all = convs);
     }
 
     create(id, users, name) {
@@ -85,10 +85,10 @@ class ConversationDB {
             this.context.db.all(getAllConversations, [], function(err, rows) {
                 if (rows) {
                     let conversations = {};
-                    for (let data in rows) {
+                    rows.forEach((row) => {
                         let conversation = new Conversation();
-                        conversations[data.id] = rows[data];
-                    }
+                        conversations[row.id] = row;
+                    });
                     return resolve(conversations);
                 } else {
                     return reject(err);
