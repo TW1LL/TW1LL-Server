@@ -20,8 +20,15 @@ class User {
             this._id = data.id;
             this.public.id = data.id;
             this.email = data.email;
-            this.public.friends = data.friends;
             this.nickname = data.nickname;
+            if(data.friends != null) {
+                data.friends = data.friends.split(', ');
+            }
+            if(data.conversations != null) {
+                data.conversations = data.conversations.split(', ');
+            }
+            this.public.friends = data.friends;
+
             this.conversations = data.conversations;
             console.log("Friends", data.friends);
         }

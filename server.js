@@ -151,10 +151,11 @@ function createUserList() {
 function createFriendsList(user) {
     log.recurrent("Creating friends list for " + user.id);
     let list = {};
-    for(let id in user.friends) {
-        let friend = db.User.all[user.friends[id]];
-        list[friend.id] = friend.data;
-    }
+    console.log(typeof user.friends);
+    user.friends.forEach((friend) => {
+        let newFriend= db.User.all[friend];
+        list[friend] = newFriend.data;
+    });
     return list;
 }
 

@@ -66,7 +66,7 @@ class UserDB {
                 if(row.conversations != null) {
                     row.conversations = row.conversations.split(', ');
                 }
-                resolve(new User(sendMessage, row));
+                resolve(new User(this.sendMessage, row));
             });
         })
     }
@@ -83,9 +83,6 @@ class UserDB {
                 } else {
                     let users = {};
                     rows.forEach((row)=> {
-                        if(row.conversations != null) {
-                            row.conversations = row.conversations.split(', ');
-                        }
                         users[row.id] = new User(this.sendMessage, row);
 
                     });
@@ -111,7 +108,7 @@ class UserDB {
         return new Promise((resolve) => {
             bcrypt.genSalt(10, (err, salt) => {
                 bcrypt.hash(params.pass, salt, null, (err, hash) => {
-                    let user = new User(sendMessage);
+                    let user = new User(this.sendMessage);
                     user.email = params.email;
                     this.all[user.id] = user;
                     this.create(user).then(() => {

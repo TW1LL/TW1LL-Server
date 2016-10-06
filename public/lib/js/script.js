@@ -14,7 +14,7 @@
             ["messageBox", "friendList", "conversationMessages", "conversationList", "newConvButton", "newFriendButton",
                 "loginModal","findFriendsModal", "modal-title", "findFriendsList", "findFriendsSubmit", "addFriendsLink",
                 "loginSubmit", "loginEmail", "loginPassword",
-                "registerSubmit", "registerEmail", "registerPassword", "registerPassword2", "registerError",
+                "registerSubmit", "registerEmail", "registerPassword", "registerPassword2", "registerError", "friendList",
                 "userInfo", "userInfoDropdown", "userInfoLink",
                 "userLogout",
                 "body-title", "body-text", "toggleFriendList", "toggleConversationList", "friends", "conversations", "sidepane"
@@ -28,6 +28,7 @@
         DOM.addFriendsLink.on("click", friendsModal);
         DOM.newConvButton.on("click", newConversation);
         DOM.addFriendsLink.hide();
+        DOM.friendList.hide();
         DOM.sidepane.hide();
         DOM.registerSubmit.on("click", register);
         DOM.toggleFriendList.on("click", DOM.toggleFriendConvList);
