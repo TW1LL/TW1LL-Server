@@ -59,7 +59,6 @@
         socket.emit(events.clientConversationSync, [storage.getUserData(), storage.getConversations()]);
         //socket.on(events.serverUserConnect, addUser);
         socket.on(events.serverUserList, updateUserList);
-        socket.on(events.serverUserDisconnect, removeUser);
         socket.on(events.serverUserData,  serverUserData);
         socket.on(events.serverMessageReceive, DOM.addMessage);
         socket.on(events.serverUserFriendsList, updateFriendsList);
@@ -384,7 +383,7 @@
         }
     }
     function updateConversationList() {
-        let conversations = getCOnversations();
-        
+        let conversations = storage.getConversations();
+
     }
 })();

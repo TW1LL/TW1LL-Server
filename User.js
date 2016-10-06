@@ -12,7 +12,7 @@ class User {
             friends: [],
             nickname: null
         };
-        this.conversations = {};
+        this.conversations = [];
         this.socket = null;
         this.sendCallback = send;
 
@@ -22,6 +22,7 @@ class User {
             this.email = data.email;
             this.public.friends = data.friends;
             this.nickname = data.nickname;
+            this.conversations = data.conversations;
         }
     }
 

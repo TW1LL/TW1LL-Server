@@ -3,7 +3,7 @@
 let Log = require('./../Log');
 let log = new Log("high");
 let bcrypt = require('bcrypt-nodejs');
-let jwt = require('jwt');
+let jwt = require('jsonwebtoken');
 let User = require('./../User');
 class UserDB {
 
@@ -62,7 +62,12 @@ class UserDB {
     get(id){
         log.recurrent("Getting user", id);
         return new Promise((resolve) => {
-            this.context.queries.getUser.get(id, (err, row) => {resolve(row)});
+            this.context.queries.getUser.get(id, (err, row) => {
+                if(row.conversations != null) {
+                    row.conversations = row.conversations.split(', ');
+                }
+                resolve(new User(sendMessage, row));
+            });
         })
     }
 
@@ -76,7 +81,16 @@ class UserDB {
                     log.debug(rows);
                     return reject(rows);
                 } else {
-                    return resolve(rows)}
+                    let users = {};
+                    rows.forEach((row)=> {
+                        if(row.conversations != null) {
+                            row.conversations = row.conversations.split(', ');
+                        }
+                        users[row.id] = new User(this.sendMessage, row);
+
+                    });
+                    return resolve(users);
+                }
             });
         })
     }
@@ -178,7 +192,7 @@ class UserDB {
     }
     prepareAll() {
         return new Promise((resolve)=> {
-            if (this.all.length == 0) {
+            if (Object.keys(this.all).length === 0 && this.all.constructor === Object) {
                 this.getAll().then((users) => {
                     this.all = users;
                     let list = {};
