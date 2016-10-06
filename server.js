@@ -58,8 +58,10 @@ app.post('/register/:email/:pass', function (req,res) {
     db.User.register(req.params)
     .then(db.User.authorize.bind(db.User))
     .then((auth) => {
-        auth.userList = db.User.prepareAll();
-        res.json(auth);
+        db.User.prepareAll().then((users) => {
+            auth.userList = users;
+            res.json(auth);
+        });
     });
 });
 

@@ -190,7 +190,7 @@ class UserDB {
     }
     prepareAll() {
         return new Promise((resolve)=> {
-            if (Object.keys(this.all).length === 0 && this.all.constructor === Object) {
+            if (Object.keys(this.all).length === 0) {
                 this.getAll().then((users) => {
                     this.all = users;
                     let list = {};

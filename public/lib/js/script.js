@@ -180,6 +180,7 @@
         this.setConversation = setConversation;
         this.getConversation = getConversation;
         this.getConversations = getConversations;
+        this.clearConversations = clearConversations;
         this.storeMessage = storeMessage;
 
         function getUserData(parameter) {
@@ -205,6 +206,8 @@
         function clearUser() {
             localStorage.removeItem('userToken');
             localStorage["user"] = JSON.stringify({});
+            localStorage["friends"] = JSON.stringify({});
+            clearConversations();
         }
 
         function getUserToken() {
@@ -244,6 +247,14 @@
                 }
             }
             return convs;
+        }
+
+        function clearConversations() {
+            for (var key in localStorage) {
+                if (key != "user" && key != "userToken" && key != "friends") {
+                    localStorage.removeItem(key);
+                }
+            }
         }
 
         function storeMessage(message) {
