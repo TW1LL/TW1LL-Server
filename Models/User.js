@@ -20,12 +20,9 @@ class User {
             this.public.id = data.id;
             this.email = data.email;
             this.nickname = data.nickname;
-            if(data.friends != null ) {
+            if(data.friends != null && data.friends != '') {
                 data.friends = data.friends.split(', ');
-            } else if (typeof data.friends === "string") {
-                data.friends = [data.friends];
-            }
-             else {
+            } else {
                 data.friends = [];
             }
             if(data.conversations != null) {
@@ -36,7 +33,6 @@ class User {
             this.public.friends = data.friends;
 
             this.conversations = data.conversations;
-            console.log("Friends", data.friends);
         }
     }
 
@@ -71,7 +67,7 @@ class User {
         return this.public.friends;
     }
     addFriend(friend) {
-        this.public.friends.push(friend);
+        return new Promise ((resolve) => {resolve(this.public.friends.push(friend))});
     }
     removeFriend(friendId) {
         this.public.friends.slice(this.public.friends.indexOf(friendId));

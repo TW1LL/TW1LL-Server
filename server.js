@@ -60,7 +60,7 @@ app.post('/register/:email/:pass', function (req,res) {
     .then((auth) => {
         db.User.prepareAll()
             .then((users) => {
-                auth.data = users;
+                auth.userList = users;
                 res.json(auth);
             }
         );
@@ -123,8 +123,6 @@ function createConversation(conversationRequest){
 
 function send(message){
     message = new Message(message.from, message.text, message.conversationId);
-    console.log(db.Conversation.all);
-    console.log(message.conversationId);
     log.message(db.User.all[message.from].email + " > " + db.Conversation.all[message.conversationId].name);
     db.User.all[message.from].send(message);
     let row = db.Conversation.all[message.conversationId];
@@ -144,7 +142,7 @@ function sendUserData(user) {
 
 function sendUserList(id) {
     db.User.prepareAll()
-        .then((users) => db.User.all[id].socket.emit(events.serverUserList, users));
+        .then((users) => {db.User.all[id].socket.emit(events.serverUserList, users);});
 }
 
 function createUserList() {
@@ -158,7 +156,6 @@ function createUserList() {
 function createFriendsList(user) {
     log.recurrent("Creating friends list for " + user.id);
     let list = {};
-    console.log(typeof user.friends);
     user.friends.forEach((friend) => {
         let newFriend= db.User.all[friend];
         list[friend] = newFriend.data;
@@ -167,19 +164,28 @@ function createFriendsList(user) {
 }
 
 function addFriends(data){
-    log.event("Adding friends");
     let user = db.User.all[data.id];
+    log.recurrent("Adding friends for " + user.name);
     if (user.friends === null) {
         user.public.friends = [];
     }
-    let friends = user.friends;
-    data.friends.forEach((friend) => {
-        if (!friends.includes(friend)) {
-            user.addFriend(friend);
+
+    data.friends.forEach((friendId) => {
+        if (!user.friends.includes(friendId)) {
+            user.addFriend(friendId);
+            let friend = db.User.all[friendId];
+            if (!friend.friends.includes(user.id)){
+                friend.addFriend(user.id).then(() => {
+                    if (friendId in usersOnline) {
+                        db.User.all[friendId].socket.emit(events.serverUserFriendsList, createFriendsList(friend));
+                    }
+                });
+            }
+            db.User.saveFriends(friend);
         }
     });
     user.socket.emit(events.serverUserFriendsList, createFriendsList(user));
-    db.User.saveFriends(user)
+    db.User.saveFriends(user);
 }
 
 function syncConversations(conversations) {

@@ -20,8 +20,7 @@ class UserDB {
     }
 
     saveFriends(user) {
-        log.recurrent("Saving friends");
-        log.debug(user);
+        log.recurrent("Saving friends for " + user.name);
         let friends = user.friends.join(', ');
         return new Promise((resolve, reject) => {
             this.context.queries.saveFriends.run([friends, user.id], (err) => {
@@ -198,6 +197,10 @@ class UserDB {
         return new Promise((resolve)=> {
             if (Object.keys(this.all).length === 0 && this.all.constructor === Object) {
                 this.getAll().then((users) => {
+                    // if the DB has no users in it, make sure we end up with an empty object, not null
+                    if (users == null) {
+                        users = {};
+                    }
                     this.all = users;
                     let list = {};
                     for (var id in this.all) {

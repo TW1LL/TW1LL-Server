@@ -32,7 +32,7 @@
         DOM.sidepane.hide();
         DOM.registerSubmit.on("click", register);
         DOM.toggleFriendList.on("click", DOM.toggleFriendConvList);
-        DOM.toggleConversationList.on("click", DOM.toggleFriendConvList)
+        DOM.toggleConversationList.on("click", DOM.toggleFriendConvList);
         DOM.registerSubmit.disabled = true;
         DOM.userInfoLink.on("click", loginModal);
         DOM.messageBox.on("keypress", checkForEnter);
@@ -48,6 +48,7 @@
         socket.on("authenticated", authorized);
         socket.on("unauthorized", unauthorized);
     }
+
     function authorized() {
         socket.on("server events", init);
     }
@@ -119,8 +120,8 @@
                 storage.setUser(res.data);
                 storage.setUserToken(res.token);
                 updateUserList(res.userList);
-                DOM.modal.switch("findFriendsModal");
                 connect();
+                DOM.modal.switch("findFriendsModal");
             } else {
                 sendError(res.data);
                 storage.clearUser();
@@ -327,9 +328,10 @@
     }
 
     function updateUserList(list) {
-        console.log(list);
         let clientUserId = storage.getUserData("id");
-        delete list[clientUserId];
+        if (list) {
+            delete list[clientUserId];
+        }
         console.log(list[clientUserId]);
         for (let obj in list) {
             console.log(typeof obj);
@@ -360,6 +362,7 @@
     }
 
     function updateFriendsList(friends) {
+        console.log("updating friends");
         storage.setUserFriends(friends);
         updateList(friends, "friendList", "link");
     }
