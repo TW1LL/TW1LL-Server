@@ -1,7 +1,7 @@
 "use strict";
 
 let Log = require('./../Log');
-let log = new Log("high");
+let log = new Log("debug");
 let bcrypt = require('bcrypt-nodejs');
 let jwt = require('jsonwebtoken');
 let User = require('./../Models/User');
@@ -16,7 +16,6 @@ class UserDB {
                     resolve(true);
                 });
         });
-
     }
 
     saveFriends(user) {
