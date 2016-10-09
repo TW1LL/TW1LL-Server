@@ -252,7 +252,6 @@
             conversation['messages']['tmp']= message;
             storage.setConversation(conversation);
         }
-
     }
 
     function serverUserData(data) {
@@ -304,7 +303,6 @@
 
     function convClickCallback(event) {
         currentConversation = event.target.id.substr(5);
-
         DOM.showConversation(storage.getConversation(currentConversation));
     }
 

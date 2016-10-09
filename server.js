@@ -125,9 +125,14 @@ function send(message){
     message = new Message(message.from, message.text, message.conversationId);
     log.message(db.User.all[message.from].email + " > " + db.Conversation.all[message.conversationId].name);
     let members = db.Conversation.all[message.conversationId].members;
+    let conversation = db.Conversation.all[message.conversationId];
     for (let memberId in members) {
        if (memberId in usersOnline && memberId != message.from) {
-           db.User.all[memberId].socket.emit(events.serverMessageSend, message);
+           let friendSocket = db.User.all[memberId].socket;
+           if (!db.User.all[memberId].conversations.includes(message.conversationId)){
+               friendSocket.emit(events.serverConversationData, conversation)
+           }
+           friendSocket.emit(events.serverMessageSend, message);
        }
     }
     db.Message.create(message);

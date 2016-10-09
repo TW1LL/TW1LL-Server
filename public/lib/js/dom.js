@@ -102,10 +102,7 @@ function Dom(storage) {
         }
         li.addEventListener("click", sendTo);
         self[where].appendChild(li);
-
-
     }
-
 
     function addMessage(message) {
         console.log("message received", message);
@@ -116,7 +113,12 @@ function Dom(storage) {
         }
         let li = document.createElement("li");
         li.innerHTML = '<<a href="#" data-userId="'+message.from+'">' + message.fromEmail + '</a>> ' + message.text;
-        self["conv_"+message.conversationId].appendChild(li);
+        try {
+            self["conv_"+message.conversationId].appendChild(li);
+        }
+        catch (TypeError) {
+            // create the conversation for the message
+        }
         storage.storeMessage(message);
     }
     function createConversationLink(conv, callback) {
@@ -142,7 +144,7 @@ function Dom(storage) {
             li = document.createElement("li");
             li.setAttribute("id", conv.messages[i].id);
             li.setAttribute("class", "convMessage");
-            li.innerHTML = '<a href="#" data-userId="'+conv.messages[i].from+'"><' + getUserData("friends")[conv.messages[i].from] + '></a> ' + conv.messages[i].text;
+            li.innerHTML = '<a href="#" data-userId="'+conv.messages[i].from+'"><' + storage.getUserData("friends")[conv.messages[i].from] + '></a> ' + conv.messages[i].text;
             ul.appendChild(li);
         }
         self.conversationMessages.appendChild(ul);

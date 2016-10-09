@@ -25,10 +25,10 @@ class User {
             } else {
                 data.friends = [];
             }
-            if(data.conversations != null) {
+            if(data.conversations != null && data.conversations != '') {
                 data.conversations = data.conversations.split(', ');
-            } else if (typeof data.conversations === "string") {
-                data.conversations = [data.conversations];
+            } else {
+                data.conversations = [];
             }
             this.public.friends = data.friends;
 
