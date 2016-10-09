@@ -108,6 +108,7 @@ function Dom(storage) {
 
 
     function addMessage(message) {
+        console.log("message received", message);
         if(message.from == storage.getUserData("id")) {
             message.fromEmail = storage.getUserData("email");
         } else {

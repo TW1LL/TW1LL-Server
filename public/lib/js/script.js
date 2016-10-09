@@ -67,7 +67,7 @@
         //socket.on(events.serverUserConnect, addUser);
         socket.on(events.serverUserList, updateUserList);
         socket.on(events.serverUserData,  serverUserData);
-        socket.on(events.serverMessageReceive, DOM.addMessage);
+        socket.on(events.serverMessageSend, DOM.addMessage);
         socket.on(events.serverUserFriendsList, updateFriendsList);
         socket.on(events.serverConversationData, updateConversationData);
         updateConversationList();

@@ -177,10 +177,6 @@ class UserDB {
         })
     }
 
-    sendMessage() {
-
-    }
-
     prepare(userId) {
         return new Promise((resolve) => {
             if (typeof this.all[userId] === "undefined") {

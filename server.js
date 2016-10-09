@@ -26,7 +26,7 @@ let events = {
     serverUserList: "server user list",
     serverUserData: "server user data",
     serverUserFriendsList: "server send friends list",
-    serverMessageReceive: "server message receive",
+    serverMessageSend: "server message send",
     serverConversationData: "server conversation data",
     clientMessageSend: "client message send",
     clientUserData: "client user data",
@@ -78,18 +78,18 @@ function connectSocket(socket) {
     let user = db.User.all[socket.decoded_token.id];
     usersOnline[user.id] = user.data;
     user.socket = socket;
-    log.event(user.email+" connected.");
+    log.event(user.email + " connected.");
     socket.emit(events.serverEvents, events);
     socket.emit(events.serverUserData, sendUserData(user));
     socket.broadcast.emit(events.serverUserConnect, user.data);
     socket.on(events.clientConversationSync, syncConversations);
     socket.on(events.clientUserFriendAdd, addFriends);
     socket.on(events.clientUserList, sendUserList);
-    socket.on(events.clientMessageSend,  send );
+    socket.on(events.clientMessageSend, send);
     socket.on(events.clientConversationCreate, createConversation);
     socket.on(events.clientRequestConversation, provideConversation);
     socket.on("disconnect", function () {
-        log.event("User " + user.email + " disconnected");
+        log.recurrent("User " + user.email + " disconnected");
         delete usersOnline[user.id];
     });
 }
@@ -124,13 +124,13 @@ function createConversation(conversationRequest){
 function send(message){
     message = new Message(message.from, message.text, message.conversationId);
     log.message(db.User.all[message.from].email + " > " + db.Conversation.all[message.conversationId].name);
-    db.User.all[message.from].send(message);
-    let row = db.Conversation.all[message.conversationId];
-    for (let user in row.users){
-        user.receive(message);
+    let members = db.Conversation.all[message.conversationId].members;
+    for (let memberId in members) {
+       if (memberId in usersOnline && memberId != message.from) {
+           db.User.all[memberId].socket.emit(events.serverMessageSend, message);
+       }
     }
     db.Message.create(message);
-
 }
 
 function sendUserData(user) {
