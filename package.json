@@ -12,6 +12,7 @@
     "jsonwebtoken": "^7.1.9",
     "socket.io": "^1.4.8",
     "socketio-jwt": "^4.5.0",
+    "sqlite": "^2.2.0",
     "uuid": "^2.0.3"
   },
   "devDependencies": {

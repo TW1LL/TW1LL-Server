@@ -41,8 +41,10 @@ let events = {
 let db = require('./db/Database');
 let log = new Log(config.logLevel);
 
-http.listen(config.serverPort, function() {
-    log.event('HTTPS server started. Listening on port ' + config.serverPort);
+db.connect().then(() => {
+    http.listen(config.serverPort, function() {
+        log.event('HTTPS server started. Listening on port ' + config.serverPort);
+    });
 });
 
 app.use(express.static(__dirname + '/public'));

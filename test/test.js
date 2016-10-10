@@ -12,31 +12,32 @@ let ConversationModel = require('./../Models/Conversation');
 let MessageModel = require('./../Models/Message');
 
 let uuid = require('uuid');
+let bcrypt = require('bcrypt-nodejs');
 let expect = require('chai').expect;
 
-describe("User data manipulation", () => {
+function getExistingUser() {
+    // get the first user - doesn't matter who we grab
+    for (let userId in db.User.all) {
+        return db.User.all[userId];
+    }
+}
 
-    describe("Get password hash", () => {
-        it("Retrieves a password hash for a given user", () => {
-            // get the first user - doesn't matter who we grab
-            let user = null;
-            for (let userId in db.User.all) {
-                user = db.User.all[userId];
-                break;
-            }
+describe("db", () => {
 
-            // pull this user's PW hash
-            let pw_hash = null;
-            db.User.getPassword(user.id).then((password) => pw_hash = password.password_hash).then(() => {
-                // required results
-                expect(pw_hash.length).to.equal(60);
-                expect(typeof pw_hash).to.equal("string");
-                }
-            );
-        })
+});
+
+describe("db.User", () => {
+
+    before(() => {
+       db.connect()
+           .then((result) => console.log("result", result));
     });
 
-    describe("Save friends for a user", () => {
+    after(() => {
+        db.close();
+    });
+
+    describe("saveFriends", () => {
 
         it("Returns true and correctly saves friends when given a valid user object", () => {
             // get the first user, we don't care which one
@@ -80,15 +81,106 @@ describe("User data manipulation", () => {
         });
     });
 
-    describe("Delete a user", () => {
+    describe("getPassword", () => {
+
+        it("Retrieves a 60 character password hash string for an existing user", () => {
+            // get the first user - doesn't matter who we grab
+            let user = getExistingUser();
+
+            // pull this user's PW hash
+            db.User.getPassword(user.id)
+                .then((password) => {
+                    let pw_hash = password.password_hash;
+                    // required results
+                    expect(pw_hash.length).to.equal(60);
+                    expect(typeof pw_hash).to.equal("string");
+                });
+        });
+
+        it("Returns false when given an invalid user id", () => {
+            let userId = uuid.v1();
+            db.User.getPassword(userId).then((result) => expect(result).to.equal(false));
+        })
+    });
+
+    describe('findIdByEmail', () => {
+
+        it("Returns an ID when given a valid email in the database", () => {
+            let user = getExistingUser();
+            db.User.findIdByEmail(user.email).then((userId) => {
+                expect(userId).to.equal(user.id);
+            })
+        });
+
+        it("Returns false when given an email that is not in the database", () => {
+            let emailAddress = "invalidAddress";
+            db.User.findIdByEmail(emailAddress).then((result) => expect(result).to.equal(false));
+        });
+    });
+
+    describe("get", () => {
+
+        it("Returns a User object when given an id for a user in the database", () => {
+            let targetUser = getExistingUser();
+            db.User.get(targetUser.id)
+                .then((user) => expect(user).is.instanceOf(UserModel));
+        });
+
+        it("Returns false when given a user ID not in the database", () => {
+            let userId = uuid.v1();
+            db.User.get(userId).then((result) => expect(result).to.equal(false));
+        })
+    });
+
+    describe("getAll", () => {
+        it("Returns a list of users", () => {
+            let notUserObject = [];
+            db.User.getAll()
+                .then((users) => {
+                    for (let userId in users) {
+                        if (!users[userId] instanceof UserModel){
+                            notUserObject.push(users[userId]);
+                        }
+                    }
+                })
+                .then(() => {
+                    expect(notUserObject.length).to.equal(0);
+                })
+        })
+    });
+
+    describe('createNewPassword', () => {
+
+        it('Returns true when given a user id, salt, and password hash to create for a user without assigned password', () => {
+            let userId = uuid.v1();
+            let password = "testPassword";
+            let createPWResult = null;
+            bcrypt.genSalt(10, (err, salt) => {
+                bcrypt.hash(password, salt, null, (err, hash) => {
+                    db.User.createNewPassword(userId, salt, hash)
+                        .then((result) => {
+                            createPWResult = result;
+                        });
+                    setTimeout(()=>{
+                        db.User.getPassword(userId).then((pwHash) => {
+                        console.log("pw", pwHash);
+                        db.User.deletePassword(userId);
+                    })},
+                        3000);
+                })
+            });
+        })
+    });
+
+    describe("deleteUser", () => {
         it("Removes all of a user's data from the database and all user lists", () => {});
     })
 });
 
-describe("Conversation data manipulation", () => {
+describe("db.Conversation", () => {
 
 });
 
-describe("Message adta manipulation", () => {
+describe("db.Message", () => {
 
 });
