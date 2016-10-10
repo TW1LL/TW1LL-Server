@@ -19,16 +19,25 @@ class UserDB {
     }
 
     saveFriends(user) {
-        log.recurrent("Saving friends for " + user.name);
-        let friends = user.friends.join(', ');
+        log.recurrent("Saving friends for " + user.id);
+
         return new Promise((resolve, reject) => {
+            let friends = user.friends.join(', ');
+            try {
+                let user = db.User.all[user.id];
+            }
+            catch (TypeError) {
+                log.error('Unable to save friends, no user with id ' + user.id + ' exists.')
+                return reject(false);
+            }
             this.context.queries.saveFriends.run([friends, user.id], (err) => {
                 if (err) {
                     return reject(err);
                 } else {
                     return resolve(true);
                 }
-            })
+            });
+            return resolve(true);
         })
     }
 
