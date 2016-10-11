@@ -20,7 +20,6 @@ class Log {
             "debug": 10
         };
         this.logLevel = this.levels[logLevel];
-
     }
 
     set level(logLevel) {

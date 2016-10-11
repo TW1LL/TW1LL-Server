@@ -26,7 +26,7 @@ let events = {
     serverUserList: "server user list",
     serverUserData: "server user data",
     serverUserFriendsList: "server send friends list",
-    serverMessageReceive: "server message receive",
+    serverMessageSend: "server message send",
     serverConversationData: "server conversation data",
     clientMessageSend: "client message send",
     clientUserData: "client user data",
@@ -41,8 +41,10 @@ let events = {
 let db = require('./db/Database');
 let log = new Log(config.logLevel);
 
-http.listen(config.serverPort, function() {
-    log.event('HTTPS server started. Listening on port ' + config.serverPort);
+db.connect().then(() => {
+    http.listen(config.serverPort, function() {
+        log.event('HTTPS server started. Listening on port ' + config.serverPort);
+    });
 });
 
 app.use(express.static(__dirname + '/public'));
@@ -78,18 +80,18 @@ function connectSocket(socket) {
     let user = db.User.all[socket.decoded_token.id];
     usersOnline[user.id] = user.data;
     user.socket = socket;
-    log.event(user.email+" connected.");
+    log.event(user.email + " connected.");
     socket.emit(events.serverEvents, events);
     socket.emit(events.serverUserData, sendUserData(user));
     socket.broadcast.emit(events.serverUserConnect, user.data);
     socket.on(events.clientConversationSync, syncConversations);
     socket.on(events.clientUserFriendAdd, addFriends);
     socket.on(events.clientUserList, sendUserList);
-    socket.on(events.clientMessageSend,  send );
+    socket.on(events.clientMessageSend, send);
     socket.on(events.clientConversationCreate, createConversation);
     socket.on(events.clientRequestConversation, provideConversation);
     socket.on("disconnect", function () {
-        log.event("User " + user.email + " disconnected");
+        log.recurrent("User " + user.email + " disconnected");
         delete usersOnline[user.id];
     });
 }
@@ -123,16 +125,19 @@ function createConversation(conversationRequest){
 
 function send(message){
     message = new Message(message.from, message.text, message.conversationId);
-    console.log(db.Conversation.all);
-    console.log(message.conversationId);
     log.message(db.User.all[message.from].email + " > " + db.Conversation.all[message.conversationId].name);
-    db.User.all[message.from].send(message);
-    let row = db.Conversation.all[message.conversationId];
-    for (let user in row.users){
-        user.receive(message);
+    let members = db.Conversation.all[message.conversationId].members;
+    let conversation = db.Conversation.all[message.conversationId];
+    for (let memberId in members) {
+       if (memberId in usersOnline && memberId != message.from) {
+           let friendSocket = db.User.all[memberId].socket;
+           if (!db.User.all[memberId].conversations.includes(message.conversationId)){
+               friendSocket.emit(events.serverConversationData, conversation)
+           }
+           friendSocket.emit(events.serverMessageSend, message);
+       }
     }
     db.Message.create(message);
-
 }
 
 function sendUserData(user) {
@@ -144,7 +149,7 @@ function sendUserData(user) {
 
 function sendUserList(id) {
     db.User.prepareAll()
-        .then((users) => db.User.all[id].socket.emit(events.serverUserList, users));
+        .then((users) => {db.User.all[id].socket.emit(events.serverUserList, users);});
 }
 
 function createUserList() {
@@ -158,7 +163,6 @@ function createUserList() {
 function createFriendsList(user) {
     log.recurrent("Creating friends list for " + user.id);
     let list = {};
-    console.log(typeof user.friends);
     user.friends.forEach((friend) => {
         let newFriend= db.User.all[friend];
         list[friend] = newFriend.data;
@@ -167,19 +171,28 @@ function createFriendsList(user) {
 }
 
 function addFriends(data){
-    log.event("Adding friends");
     let user = db.User.all[data.id];
+    log.recurrent("Adding friends for " + user.name);
     if (user.friends === null) {
         user.public.friends = [];
     }
-    let friends = user.friends;
-    data.friends.forEach((friend) => {
-        if (!friends.includes(friend)) {
-            user.addFriend(friend);
+
+    data.friends.forEach((friendId) => {
+        if (!user.friends.includes(friendId)) {
+            user.addFriend(friendId);
+            let friend = db.User.all[friendId];
+            if (!friend.friends.includes(user.id)){
+                friend.addFriend(user.id).then(() => {
+                    if (friendId in usersOnline) {
+                        db.User.all[friendId].socket.emit(events.serverUserFriendsList, createFriendsList(friend));
+                    }
+                });
+            }
+            db.User.saveFriends(friend);
         }
     });
     user.socket.emit(events.serverUserFriendsList, createFriendsList(user));
-    db.User.saveFriends(user)
+    db.User.saveFriends(user);
 }
 
 function syncConversations(conversations) {
