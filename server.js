@@ -18,7 +18,10 @@ let config = {
     serverPort: 443,
     logLevel: "med-high"
 };
-let usersOnline = {}, users = {};
+
+let db = require('./db/Database');
+let log = new Log(config.logLevel);
+
 let events = {
     serverEvents: "server events",
     serverUserConnect: "server user connect",
@@ -38,12 +41,14 @@ let events = {
     clientRequestConversation: "client request conversation"
 };
 
-let db = require('./db/Database');
-let log = new Log(config.logLevel);
+let usersOnline = {}, users = {};
 
-http.listen(config.serverPort, function() {
-    log.event('HTTPS server started. Listening on port ' + config.serverPort);
-});
+db.connect()
+    .then(() => {
+        http.listen(config.serverPort, function() {
+            log.event('HTTPS server started. Listening on port ' + config.serverPort);
+        });
+    });
 
 app.use(express.static(__dirname + '/public'));
 

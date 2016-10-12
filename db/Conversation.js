@@ -83,31 +83,33 @@ class ConversationDB {
         let getAllConversations = "SELECT * FROM conversations";
         log.event("Getting all conversations");
         return new Promise ((resolve, reject) => {
-            this.context.db.all(getAllConversations, [], (err, rows) => {
-                if (rows) {
-                    let conversations = {};
-                    rows.forEach((row) => {
-                        let memberIds = row.members.split(', ');
-                        let members = {};
-                        memberIds.forEach((val, index, array) => {
-                            members[val] = this.context.User.all[val].data;
+            this.context.db.all(getAllConversations)
+                .then((rows) => {
+                    if (rows) {
+                        let conversations = {};
+                        rows.forEach((row) => {
+                            let memberIds = row.members.split(', ');
+                            let members = {};
+                            memberIds.forEach((val, index, array) => {
+                                members[val] = this.context.User.all[val].data;
+                            });
+                            let conversation = new Conversation(members,
+                                row.name,
+                                row.id,
+                                this.context.Message.getMessagesForConversation(row.id).then((messages) => conversation.messages = messages));
+                            conversations[row.id] = conversation;
                         });
-                        let conversation = new Conversation(members,
-                            row.name,
-                            row.id,
-                            this.context.Message.getMessagesForConversation(row.id).then((messages) => conversation.messages = messages));
-                        conversations[row.id] = conversation;
-                    });
-                    let messages = [];
-                    for (let conv in conversations) {
-                        messages.push(conversations[conv].messages);
+                        let messages = [];
+                        for (let conv in conversations) {
+                            messages.push(conversations[conv].messages);
+                        }
+                        return Promise.all(messages)
+                            .then(() => {resolve(conversations)});
+                    } else {
+                        return reject(err);
                     }
-                    return Promise.all(messages)
-                        .then(() => {resolve(conversations)});
-                } else {
-                    return reject(err);
-                }
             })
+            .catch((error) => {console.log(error)})
         })
     }
 }
