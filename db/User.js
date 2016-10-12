@@ -108,22 +108,21 @@ class UserDB {
         })
     }
 
-    createNewPassword(userId, salt, hash) {
+    createNewPassword(userId, hash) {
         log.recurrent("Creating new password for " + userId);
-        log.debug(hash);
+        log.debug("PW hash = " + hash);
         return new Promise((resolve, reject) => {
-            this.context.queries.createNewPassword.run([userId, salt, hash])
-                .then((result) => {
-                    console.log("more", err);
-                    if (err) {
-                        log.debug(err);
-                        return reject(err);
-                    } else if (this.lastId){
+            console.log('in the promise');
+            this.context.queries.createNewPassword.run([userId, '', hash])
+                .then(function(result) {
+                    console.log('result', result);
+                    if (typeof result.stmt.lastID !== "undefined" && result.stmt.changes == 1){
                         return resolve(true);
+                    } else {
+                        reject(result);
                     }
                 })
-                .catch((err) => {console.log("err", err)});
-            return reject(false);
+                .catch((err) => console.log('err', err));
         });
     }
 

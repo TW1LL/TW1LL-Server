@@ -28,7 +28,7 @@ describe("db", () => {});
 
 describe("db.User", () => {
 
-    before(() => {db.connect()});
+    before(() => {db.connect().then(()=>{return true})});
 
     after(() => {
         db.close();
@@ -40,9 +40,7 @@ describe("db.User", () => {
             this.timeout(3000);
             return getExistingUser()
                 .then((user) => db.User.saveFriends(user))
-                .then((result) => {
-                        expect(result).to.equal(true);
-                })
+                .then((result) => {expect(result).to.equal(true)})
         });
 
         it("Returns false when given a user object for a user who does not exist", function(){
@@ -151,26 +149,38 @@ describe("db.User", () => {
     describe('createNewPassword', () => {
 
         it('Saves a given password salt and hash with appropriate ID to the user_passwords table', function(){
+            this.timeout(15000);
+
             let userId = uuid.v1();
             let password = "testPassword";
-            let createPWResult = null;
-            bcrypt.genSalt(10, (err, salt) => {
-                bcrypt.hash(password, salt, null, (err, hash) => {
-                    console.log("here");
-                    db.User.createNewPassword(userId, salt, hash)
-                        .then((result) => {
-                            console.log("but not here");
-                            createPWResult = result;
-                            console.log("result?", createPWResult);
+
+            function generatePWHash(userId){
+                return new Promise((resolve) => {
+                    bcrypt.genSalt(10, (err, salt) => {
+                        bcrypt.hash(password, salt, null, (err, hash) => {
+                            resolve({id: userId, hash: hash})
                         })
-                        .then(() => {db.User.getPassword(userId)})
-                        .then((pwHash) => {
-                            console.log("pw", pwHash);
-                            expect(pwHash).to.equal(hash);
-                            // db.User.deletePassword(userId);
-                        });
+                    });
                 })
-            });
+            }
+
+            return generatePWHash(userId)
+                .then((result) => {
+                    db.User.createNewPassword(result.id, result.hash)
+                        .then(() => {
+                            console.log('what');
+                            db.User.getPassword(userId)
+                                .then((pwHash) => {
+                                console.log("pw", pwHash);
+                                expect(pwHash).to.equal(pwHash);
+                                // db.User.deletePassword(userId);
+                            })
+                            .catch((err)=> {
+                                console.log(err)
+                            });
+                        })
+                })
+                .catch(console.log("Fucker"));
         })
     });
 
