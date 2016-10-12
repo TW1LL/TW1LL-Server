@@ -37,7 +37,7 @@ describe("db.User", () => {
     describe("saveFriends", () => {
 
         it("Returns true and correctly saves friends when given a valid user object", function(){
-            this.timeout(3000);
+            this.timeout(5000);
             return getExistingUser()
                 .then((user) => db.User.saveFriends(user))
                 .then((result) => {expect(result).to.equal(true)})
@@ -148,9 +148,7 @@ describe("db.User", () => {
 
     describe('createNewPassword', () => {
 
-        it('Saves a given password salt and hash with appropriate ID to the user_passwords table', function(){
-            this.timeout(15000);
-
+        it('Saves a given password salt and hash with appropriate ID to the user_passwords table', (done) => {
             let userId = uuid.v1();
             let password = "testPassword";
 
@@ -180,7 +178,7 @@ describe("db.User", () => {
                             });
                         })
                 })
-                .catch(console.log("Fucker"));
+                .catch(done(new Error("Error happening in password saving.")));
         })
     });
 
