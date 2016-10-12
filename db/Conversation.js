@@ -8,8 +8,13 @@ class ConversationDB {
 
     constructor(context) {
         this.context = context;
-        this.getAll()
-            .then((convs) => this.all = convs);
+        this.ready = new Promise((resolve) => {
+            this.getAll()
+                .then((convs) => {
+                    this.all = convs;
+                    resolve(true);
+                });
+        });
     }
 
     create(id, users, name) {
@@ -18,13 +23,15 @@ class ConversationDB {
         log.debug(users);
         let usersString = users.join(', ');
         return new Promise ((resolve, reject) => {
-            this.context.queries.createConversation.run([id, usersString, name], function(err){
-                if (this.lastID) {
+            this.context.queries.createConversation.run([id, usersString, name])
+                .then((result) => {
+                if (result.lastID) {
                     return resolve(true);
                 } else {
-                    return reject(err);
+                    return reject(result);
                 }
             })
+            .catch((err) => log.debug(err));
         })
     }
 
@@ -33,13 +40,15 @@ class ConversationDB {
         log.debug(members);
         let membersString = members.join(', ');
         return new Promise((resolve) => {
-            this.context.queries.retrieveConversationByMembers.get(membersString, (err, row) => {
-                if (row) {
-                    return resolve(row)
-                } else {
-                    return resolve(false)
-                }
-            })
+            this.context.queries.retrieveConversationByMembers.get(membersString)
+                .then((err, row) => {
+                    if (row) {
+                        return resolve(row)
+                    } else {
+                        return resolve(false)
+                    }
+                })
+                .catch((err) => log.debug(err))
         })
     }
 

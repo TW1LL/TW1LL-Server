@@ -43,14 +43,23 @@ let events = {
 
 let usersOnline = {}, users = {};
 
-db.connect()
-    .then(() => {
-        http.listen(config.serverPort, function() {
-            log.event('HTTPS server started. Listening on port ' + config.serverPort);
-        });
-    });
-
 app.use(express.static(__dirname + '/public'));
+
+console.log(db.connect());
+
+db.connect()
+    .then((result) => console.log('*'))
+    .catch(() => console.log('what the fuck'));
+    // .then((result) => {
+    //     console.log('result', result);
+    //     console.log('here', db.User.all);
+    //     console.log(db.Conversation.all);
+    //     console.log(db.Message.all);
+    //     http.listen(config.serverPort, function() {
+    //         log.event('HTTPS server started. Listening on port ' + config.serverPort);
+    //     });
+    // })
+    // .catch((err)=>{console.log('err', err)});
 
 app.post('/login/:email/:pass', function (req,res) {
     log.event('Authorizing user...');
@@ -115,15 +124,17 @@ function createConversation(conversationRequest){
                     return resolve(conversation);
                 } else {
                     conversation = new Conversation(conversationRequest.users, name);
-                    db.Conversation.create(conversation.id, conversationRequest.users, name).then(()=>{
-                        return resolve(conversation);
-                    });
+                    db.Conversation.create(conversation.id, conversationRequest.users, name)
+                        .then(() => {return resolve(conversation)})
+                        .catch((err) => log.debug(err));
                 }
             });
-    }).then((conv) => {
+    })
+    .then((conv) => {
         db.Conversation.all[conv.id] = conv;
         db.User.all[conversationRequest.userId].socket.emit(events.serverConversationData, conv)
-    });
+    })
+    .catch((err) => log.debug(err));
 }
 
 function send(message){

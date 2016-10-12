@@ -57,7 +57,7 @@ class Database {
                     } else {
                         this.db = database;
                         this.prepareDB()
-                            .then(() => {return resolve(this.prepareModels())})
+                            .then(this.prepareModels.bind(this))
                     }
                 })
             })
@@ -67,11 +67,14 @@ class Database {
         return new Promise ((resolve, reject) => {
             this.User = new User(this);
             this.User.ready
-                .then(() => {
+                .then((result) => {
                     this.Message = new Message(this);
                     this.Conversation = new Conversation(this);
-                    resolve(true);
-                });
+                    this.Conversation.ready
+                        .then(() => {
+                            resolve(true);
+                        })
+                })
         })
     }
 
@@ -92,6 +95,15 @@ class Database {
                     });
             }
 
+            this.queries = statements;
+            console.log('QUERIES DONE', statements);
+            resolve('DB prepared');
+        })
+    }
+
+    prepareStatements(){
+        log.event("Preparing DB statements");
+        return new Promise((resolve, reject) => {
             let statements  = {};
             for(let query in this.queries){
                 let queryText = this.queries[query];
@@ -104,10 +116,9 @@ class Database {
                         log.event(error);
                     });
             }
-
-            this.queries = statements;
-            resolve();
+            Promise.all
         })
+
     }
 
     close(){

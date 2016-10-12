@@ -15,7 +15,7 @@ class UserDB {
                 .then((users) => {
                     this.all = users;
                     resolve(true);
-                });
+                })
         });
     }
 
@@ -74,7 +74,7 @@ class UserDB {
     }
 
     get(id){
-        log.recurrent("Getting user", id);
+        log.recurrent("Getting user" + id);
         return new Promise((resolve, reject) => {
             this.context.queries.getUser.get(id)
                 .then((row) => {

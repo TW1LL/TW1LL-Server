@@ -36,11 +36,11 @@ describe("db.User", () => {
 
     describe("saveFriends", () => {
 
-        it("Returns true and correctly saves friends when given a valid user object", function(){
-            this.timeout(5000);
+        it("Returns true and correctly saves friends when given a valid user object", function(done){
             return getExistingUser()
                 .then((user) => db.User.saveFriends(user))
                 .then((result) => {expect(result).to.equal(true)})
+                .catch((err) => {done(new Error("Fucking error" + err))})
         });
 
         it("Returns false when given a user object for a user who does not exist", function(){
