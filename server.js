@@ -51,7 +51,7 @@ db.connect()
             log.sys('HTTPS server started. Listening on port ' + config.serverPort);
         });
     })
-    .catch((err)=>{console.log('err', err)});
+    .catch((err)=>{log.error(err)});
 
 app.post('/login/:email/:pass', function (req,res) {
     log.event('Authorizing user...');
@@ -137,8 +137,8 @@ function send(message){
     log.message(db.User.all[message.from].email + " > " + conversation.name);
 
     let members = conversation.members;
-    for (let i in members) {
-        let member = db.User.all[members[i]];
+    for (let memberId in members) {
+        let member = db.User.all[memberId];
 
         // receiving conversation member is online
         if (member.id in usersOnline && member.id != message.from) {
@@ -147,7 +147,7 @@ function send(message){
             // send conversation and add to user who doesn't have it yet
             if (!member.conversations.includes(message.conversationId)){
                 memberSocket.emit(events.serverConversationData, conversation);
-                member.addConversation(conversation);
+                member.addConversation(conversation.id);
             }
             // send the message
             memberSocket.emit(events.serverMessageSend, message);
@@ -155,7 +155,7 @@ function send(message){
         // receiving conversation member is offline
         } else if (!member.id in usersOnline && member.id != message.from) {
             if (!member.conversations.includes(message.conversationId)){
-                member.addConversation(conversation)
+                member.addConversation(conversation.id)
             }
         }
     }
