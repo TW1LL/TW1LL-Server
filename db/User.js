@@ -25,7 +25,7 @@ class UserDB {
             let friends = user.friends.join(', ');
             let localUser = this.all[user.id];
             if (typeof localUser !== "undefined") {
-                this.context.queries.saveFriends.run([friends, user.id])
+                this.context.queries.saveFriends.run([friends, Date.now(), user.id])
                     .then(function (result){
                         if (typeof result.stmt.lastID !== "undefined" && result.stmt.changes == 1) {
                             return resolve(true);
@@ -107,11 +107,11 @@ class UserDB {
         })
     }
 
-    createNewPassword(userId, salt, hash) {
+    createNewPassword(userId, hash) {
         log.recurrent("Creating new password for " + userId);
         log.debug("PW hash = " + hash);
         return new Promise((resolve, reject) => {
-            this.context.queries.createNewPassword.run([userId, '', hash])
+            this.context.queries.createNewPassword.run([userId, hash, Date.now(), Date.now()])
                 .then(function(result) {
                     if (typeof result.stmt.lastID !== "undefined" && result.stmt.changes == 1){
                         return resolve(true);
@@ -147,7 +147,7 @@ class UserDB {
                         user.email = params.email;
                         this.all[user.id] = user;
                         this.create(user).then(() => {
-                            this.createNewPassword(user.id, salt, hash).then(() => {
+                            this.createNewPassword(user.id, hash).then(() => {
                                 return resolve({email: params.email, password: params.pass});
                             });
                         }).catch((err) => log.error(err));
@@ -159,7 +159,7 @@ class UserDB {
     create(user){
         log.recurrent("Creating new user", user.name);
         return new Promise((resolve, reject) => {
-            let data = [user.id, user.email, user.friends, user.nickname, user.conversations];
+            let data = [user.id, user.email, user.friends, user.nickname, user.conversations, Date.now(), Date.now()];
             this.context.queries.createUser.run(data)
                 .then((result) => {
                     if (typeof result.stmt.lastID !== "undefined" && result.stmt.changes == 1) {

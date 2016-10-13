@@ -18,12 +18,12 @@ class ConversationDB {
     }
 
     create(id, users, name) {
-        log.debug("Creating conversation " + name);
+        log.recurrent("Creating conversation " + name);
         log.debug(id);
         log.debug(users);
         let usersString = users.join(', ');
         return new Promise ((resolve, reject) => {
-            this.context.queries.createConversation.run([id, usersString, name])
+            this.context.queries.createConversation.run([id, usersString, name, Date.now(), Date.now()])
                 .then((result) => {
                 if (result.lastID) {
                     return resolve(true);
@@ -36,7 +36,7 @@ class ConversationDB {
     }
 
     findByMembers(members){
-        log.debug("Retrieving conversation by members" );
+        log.recurrent("Retrieving conversation by members" );
         log.debug(members);
         let membersString = members.join(', ');
         return new Promise((resolve) => {
@@ -53,7 +53,7 @@ class ConversationDB {
     }
 
     get(id) {
-        log.debug("Retrieving conversation " + id);
+        log.recurrent("Retrieving conversation " + id);
         return new Promise ((resolve, reject) => {
             this.context.queries.retrieveConversationById.get(id)
                 .then((err, row) => {
@@ -69,7 +69,7 @@ class ConversationDB {
     }
 
     getList(ids){
-        log.debug("Retrieving conversations " + ids);
+        log.recurrent("Retrieving conversations " + ids);
         let idString = ids.join(', ');
         return new Promise ((resolve, reject) => {
             this.context.queries.retrieveConversationByIdList.all(idString)
@@ -92,7 +92,7 @@ class ConversationDB {
 
     getAll() {
         let getAllConversations = "SELECT * FROM conversations";
-        log.debug("Getting all conversations");
+        log.event("Getting all conversations");
         return new Promise ((resolve, reject) => {
             this.context.db.all(getAllConversations)
                 .then((rows) => {
