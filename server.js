@@ -45,21 +45,13 @@ let usersOnline = {}, users = {};
 
 app.use(express.static(__dirname + '/public'));
 
-console.log(db.connect());
-
 db.connect()
-    .then((result) => console.log('*'))
-    .catch(() => console.log('what the fuck'));
-    // .then((result) => {
-    //     console.log('result', result);
-    //     console.log('here', db.User.all);
-    //     console.log(db.Conversation.all);
-    //     console.log(db.Message.all);
-    //     http.listen(config.serverPort, function() {
-    //         log.event('HTTPS server started. Listening on port ' + config.serverPort);
-    //     });
-    // })
-    // .catch((err)=>{console.log('err', err)});
+    .then((result) => {
+        http.listen(config.serverPort, function() {
+            log.event('HTTPS server started. Listening on port ' + config.serverPort);
+        });
+    })
+    .catch((err)=>{console.log('err', err)});
 
 app.post('/login/:email/:pass', function (req,res) {
     log.event('Authorizing user...');

@@ -56,14 +56,56 @@ class Database {
                         reject(false);
                     } else {
                         this.db = database;
-                        this.prepareDB()
+                        this.prepareTables()
+                            .then(this.prepareQueryStatements.bind(this))
                             .then(this.prepareModels.bind(this))
+                            .then(resolve("Database connected"))
+                            .catch((err) => {reject('connect err' + err)})
                     }
                 })
             })
     }
 
+    prepareTables(){
+        log.event("Preparing DB tables");
+        return new Promise((resolve, reject) => {
+            let tablePromises = [];
+            for (let createStatement in this.tableCreateStatements) {
+                tablePromises.push(this.db.exec(this.tableCreateStatements[createStatement]));
+            }
+            Promise.all(tablePromises)
+                .then(() => {resolve('DB prepared');})
+                .catch ((error) => {
+                    if (error){
+                        log.event("Error creating table " + error);
+                        reject(error);
+                    }
+            })
+        })
+    }
+
+    prepareQueryStatements(){
+        log.event("Preparing DB statements");
+        return new Promise((resolve, reject) => {
+            let statementPromises  = [];
+            let statements = {};
+            for(let query in this.queries){
+                let queryText = this.queries[query];
+                let statement = this.db.prepare(queryText);
+                statementPromises.push(statement);
+                statements[query] = statement.then((stmt) => statements[query] = stmt);
+            }
+            Promise.all(statementPromises)
+                .then(() => {
+                    this.queries = statements;
+                    return resolve('Completed preparing statements');
+                });
+        })
+
+    }
+
     prepareModels(){
+        log.event("Preparing models");
         return new Promise ((resolve, reject) => {
             this.User = new User(this);
             this.User.ready
@@ -72,53 +114,12 @@ class Database {
                     this.Conversation = new Conversation(this);
                     this.Conversation.ready
                         .then(() => {
+                            console.log('conversation ready', this.Conversation.ready);
                             resolve(true);
                         })
+                        .catch((err) => console.log('ERR', err))
                 })
         })
-    }
-
-    prepareDB(){
-        log.event("Preparing DB tables and queries");
-        return new Promise((resolve, reject) => {
-            for (let createStatement in this.tableCreateStatements) {
-                this.db.exec(this.tableCreateStatements[createStatement])
-                    .then((result)=> {
-                        return resolve();
-                    })
-                    .catch ((error) => {
-                        if (error){
-                            log.event("Error creating table " + createStatement);
-                            log.event(error);
-                            reject(error);
-                        }
-                    });
-            }
-
-            this.queries = statements;
-            console.log('QUERIES DONE', statements);
-            resolve('DB prepared');
-        })
-    }
-
-    prepareStatements(){
-        log.event("Preparing DB statements");
-        return new Promise((resolve, reject) => {
-            let statements  = {};
-            for(let query in this.queries){
-                let queryText = this.queries[query];
-                this.db.prepare(queryText, null)
-                    .then((preparedStatement) => {
-                        statements[query] = preparedStatement;
-                    })
-                    .catch(() => {
-                        log.event("error preparing query " + query);
-                        log.event(error);
-                    });
-            }
-            Promise.all
-        })
-
     }
 
     close(){
