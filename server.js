@@ -102,6 +102,7 @@ function connectSocket(socket) {
 }
 
 function createConversation(conversationRequest){
+    // when one user starts a conversation, provides either the existing conversation or creates a new one
     let members = [];
     for (let i in conversationRequest.users) {
         members[i] = db.User.all[conversationRequest.users[i]].email;
@@ -119,7 +120,7 @@ function createConversation(conversationRequest){
                     conversation = new Conversation(conversationRequest.users, name);
                     db.Conversation.create(conversation.id, conversationRequest.users, name)
                         .then(() => {return resolve(conversation)})
-                        .catch((err) => log.debug(err));
+                        .catch((err) => reject(err));
                 }
             });
     })
@@ -127,22 +128,36 @@ function createConversation(conversationRequest){
         db.Conversation.all[conv.id] = conv;
         db.User.all[conversationRequest.userId].socket.emit(events.serverConversationData, conv)
     })
-    .catch((err) => log.debug(err));
+    .catch((err) => log.debug('Error creating conversation ' + err));
 }
 
 function send(message){
     message = new Message(message.from, message.text, message.conversationId);
     let conversation = db.Conversation.all[message.conversationId];
     log.message(db.User.all[message.from].email + " > " + conversation.name);
+
     let members = conversation.members;
-    for (let memberId in members) {
-       if (memberId in usersOnline && memberId != message.from) {
-           let friendSocket = db.User.all[memberId].socket;
-           if (!db.User.all[memberId].conversations.includes(message.conversationId)){
-               friendSocket.emit(events.serverConversationData, conversation)
-           }
-           friendSocket.emit(events.serverMessageSend, message);
-       }
+    for (let i in members) {
+        let member = db.User.all[members[i]];
+
+        // receiving conversation member is online
+        if (member.id in usersOnline && member.id != message.from) {
+            let memberSocket = member.socket;
+
+            // send conversation and add to user who doesn't have it yet
+            if (!member.conversations.includes(message.conversationId)){
+                memberSocket.emit(events.serverConversationData, conversation);
+                member.addConversation(conversation);
+            }
+            // send the message
+            memberSocket.emit(events.serverMessageSend, message);
+
+        // receiving conversation member is offline
+        } else if (!member.id in usersOnline && member.id != message.from) {
+            if (!member.conversations.includes(message.conversationId)){
+                member.addConversation(conversation)
+            }
+        }
     }
     db.Message.create(message);
 }

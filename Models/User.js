@@ -12,7 +12,7 @@ class User {
             friends: [],
             nickname: null
         };
-        this.conversations = null;
+        this.conversations = [];
         this.socket = null;
 
         if(typeof data !== "undefined") {
@@ -36,39 +36,42 @@ class User {
         }
     }
 
-    send(message) {
-        //this.conversations[message.conversationId].messages.push(message);
-    }
-
-    receive(newMessage) {
-        this.messages.push(newMessage);
-        this.socket.emit("server message receive", newMessage);
+    addConversation(conversation) {
+        this.conversations.push(conversation);
     }
 
     get id() {
         return this._id;
     }
+
     set id(id) {
     // invalid, cannot change user id
     }
+
     get email() {
         return this.public.email;
     }
+
     set email(email) {
         this.public.email = email;
     }
+
     get nickname() {
         return this.public.nickname;
     }
+
     set nickname(nick) {
         return this.public.nickname;
     }
+
     get friends() {
         return this.public.friends;
     }
+
     addFriend(friend) {
         return new Promise ((resolve) => {resolve(this.public.friends.push(friend))});
     }
+
     removeFriend(friendId) {
         this.public.friends.slice(this.public.friends.indexOf(friendId));
     }

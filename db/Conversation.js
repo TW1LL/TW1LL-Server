@@ -21,9 +21,9 @@ class ConversationDB {
         log.recurrent("Creating conversation " + name);
         log.debug(id);
         log.debug(users);
-        let usersString = users.join(', ');
+        let membersString = users.sort().join(', ');
         return new Promise ((resolve, reject) => {
-            this.context.queries.createConversation.run([id, usersString, name, Date.now(), Date.now()])
+            this.context.queries.createConversation.run([id, membersString, name, Date.now(), Date.now()])
                 .then((result) => {
                 if (result.lastID) {
                     return resolve(true);
@@ -38,17 +38,17 @@ class ConversationDB {
     findByMembers(members){
         log.recurrent("Retrieving conversation by members" );
         log.debug(members);
-        let membersString = members.join(', ');
-        return new Promise((resolve) => {
+        let membersString = members.sort().join(', ');
+        return new Promise((resolve, reject) => {
             this.context.queries.retrieveConversationByMembers.get(membersString)
-                .then((err, row) => {
+                .then((row) => {
                     if (row) {
                         return resolve(row)
                     } else {
                         return resolve(false)
                     }
                 })
-                .catch((err) => log.debug(err))
+                .catch((err) => reject(err))
         })
     }
 
