@@ -25,7 +25,7 @@ class MessageDB {
                 .then((rows) => {
                     for (let i in rows) {
                         let row = rows[i];
-                        let message = new Message(row.from_id, row.message, row.conversationId, row);
+                        let message = new Message(row.id, row.from_id, row.message, row.conversationId, row.timestamp);
                         messages[row.id] = message;
                     }
                     resolve(messages);

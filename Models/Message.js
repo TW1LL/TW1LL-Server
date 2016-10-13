@@ -3,16 +3,15 @@
 let uuid = require('uuid');
 
 class Message {
-    constructor(from, text, conversationId, data) {
-        this.id = uuid.v1();
+    constructor(id, from, text, conversationId, timestamp) {
+        this.id = id;
         this.conversationId = conversationId;
         this.from = from;
         this.text = text;
-        this.timestamp = Date.now();
-
-        if (typeof data !== "undefined") {
-            this.id = data.id;
-            this.timestamp = data.timestamp;
+        if (typeof timestamp !== "undefined") {
+            this.timestamp = timestamp;
+        } else {
+            this.timestamp = Date.now();
         }
     }
 }

@@ -31,6 +31,7 @@ let events = {
     serverUserFriendsList: "server send friends list",
     serverMessageSend: "server message send",
     serverConversationData: "server conversation data",
+    serverUserLogout: "server user logout",
     clientMessageSend: "client message send",
     clientUserData: "client user data",
     clientConversationCreate: "client conversation create",
@@ -83,22 +84,28 @@ io.on('authenticated', connectSocket);
 
 function connectSocket(socket) {
     let user = db.User.all[socket.decoded_token.id];
-    usersOnline[user.id] = user.data;
-    user.socket = socket;
-    log.event(user.email + " connected.");
-    socket.emit(events.serverEvents, events);
-    socket.emit(events.serverUserData, sendUserData(user));
-    socket.broadcast.emit(events.serverUserConnect, user.data);
+    if(typeof user === "undefined") {
+        log.error("USER NOT FOUND");
+        socket.emit(events.serverUserLogout);
+    } else {
+        usersOnline[user.id] = user.data;
+        user.socket = socket;
+        log.event(user.email + " connected.");
+        socket.emit(events.serverEvents, events);
+        socket.emit(events.serverUserData, sendUserData(user));
+        socket.broadcast.emit(events.serverUserConnect, user.data);
+        socket.on("disconnect", function () {
+            log.recurrent("User " + user.email + " disconnected");
+            delete usersOnline[user.id];
+        });
+    }
     socket.on(events.clientConversationSync, syncConversations);
     socket.on(events.clientUserFriendAdd, addFriends);
     socket.on(events.clientUserList, sendUserList);
     socket.on(events.clientMessageSend, send);
     socket.on(events.clientConversationCreate, createConversation);
     socket.on(events.clientRequestConversation, provideConversation);
-    socket.on("disconnect", function () {
-        log.recurrent("User " + user.email + " disconnected");
-        delete usersOnline[user.id];
-    });
+
 }
 
 function createConversation(conversationRequest){
@@ -132,7 +139,7 @@ function createConversation(conversationRequest){
 }
 
 function send(message){
-    message = new Message(message.from, message.text, message.conversationId);
+    message = new Message(message.id, message.from, message.text, message.conversationId);
     let conversation = db.Conversation.all[message.conversationId];
     log.message(db.User.all[message.from].email + " > " + conversation.name);
 

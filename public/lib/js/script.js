@@ -47,6 +47,7 @@
         socket.emit('authenticate', {token: storage.getUserToken()});
         socket.on("authenticated", authorized);
         socket.on("unauthorized", unauthorized);
+        socket.on("server user logout", user.logout);
     }
 
     function authorized() {
@@ -57,7 +58,7 @@
         if (error.data.type == "UnauthorizedError" || error.data.code == "invalid_token") {
             sendError("User's token is invalid and requires new login");
         }
-        storage.clearUser();
+        user.logout();
     }
 
     function init(eventList) {
@@ -67,7 +68,7 @@
         //socket.on(events.serverUserConnect, addUser);
         socket.on(events.serverUserList, updateUserList);
         socket.on(events.serverUserData,  serverUserData);
-        socket.on(events.serverMessageSend, DOM.addMessage);
+        socket.on(events.serverMessageSend, addMsg);
         socket.on(events.serverUserFriendsList, updateFriendsList);
         socket.on(events.serverConversationData, updateConversationData);
         updateConversationList();
@@ -167,16 +168,13 @@
         }
 
         function logout() {
+            console.log("Clearing user...");
             storage.clearUser();
             DOM.logout();
             socket.disconnect();
         }
 
     }
-    function sendError(message) {
-        alert(message);
-    }
-
     function Storage() {
         this.getUserData = getUserData;
         this.setUserData = setUserData;
@@ -268,9 +266,12 @@
 
         function storeMessage(message) {
             var conversation = storage.getConversation(message.conversationId);
-            conversation['messages']['tmp']= message;
+            conversation['messages'][message.id]= message;
             storage.setConversation(conversation);
         }
+    }
+    function sendError(message) {
+        alert(message);
     }
 
     function serverUserData(data) {
@@ -336,7 +337,8 @@
             "from": storage.getUserData("id"),
             "text": DOM.messageBox.value,
             "timestamp": Date.now(),
-            "conversationId": currentConversation
+            "conversationId": currentConversation,
+            "id": uuid.v1()
         };
         socket.emit(events.clientMessageSend, message);
         DOM.messageBox.value = "";
@@ -402,4 +404,8 @@
         }
     }
 
+    function addMsg(message) {
+        storage.storeMessage(message);
+        DOM.addMessage(message);
+    }
 })();

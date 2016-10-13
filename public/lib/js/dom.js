@@ -116,15 +116,15 @@ function Dom(storage) {
             message.fromEmail = storage.getUserFriends()[message.from].email;
         }
         let li = document.createElement("li");
+        li.setAttribute("id", message.id);
         li.innerHTML = '<<a href="#" data-userId="'+message.from+'">' + message.fromEmail + '</a>> ' + message.text;
-        try {
-            self["conv_"+message.conversationId].appendChild(li);
+        try { self["conv_"+message.conversationId].appendChild(li);
         }
+
         catch (TypeError) {
             // create the conversation for the message
             console.log('no conversation for message');
         }
-        storage.storeMessage(message);
     }
     function createConversationLink(conv, callback) {
         let li = document.createElement("li");
@@ -173,6 +173,7 @@ function Dom(storage) {
     }
 
     function updateConversationMessages(conv) {
+        console.log("clearing conversation...");
         let messageList = self["conv_"+conv.id];
         messageList.clear();
         for(var i in conv.messages) {
