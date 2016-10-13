@@ -145,8 +145,7 @@ class UserDB {
         log.recurrent("Registering new user " + params.email);
         return new Promise((resolve) => {
             bcrypt.genSalt(10, (err, salt) => {
-                bcrypt.hash(params.pass, salt, null)
-                    .then((err, hash) => {
+                bcrypt.hash(params.pass, salt, null, (err, hash) => {
                         let user = new User();
                         user.email = params.email;
                         this.all[user.id] = user;
@@ -255,7 +254,7 @@ class UserDB {
             }
         })
     }
-
+    
     getConversations(id) {
         log.recurrent("Getting conversations for " + id);
         return new Promise((resolve, reject) => {

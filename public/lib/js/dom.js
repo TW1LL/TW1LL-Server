@@ -38,7 +38,7 @@ function Dom(storage) {
         self[id].hide = hide;
         self[id].show = show;
         self[id].toggle = toggle;
-
+        self[id].clear = clear;
         function toggle() {
             if (self[id].style.display == "none") {
                     self[id].show();
@@ -55,6 +55,9 @@ function Dom(storage) {
         }
         function on(event, fn) {
             self[id].addEventListener(event, fn);
+        }''
+        function clear() {
+            self[id].innerHTML = '';
         }
         return self[id];
     }
@@ -130,18 +133,13 @@ function Dom(storage) {
         self.conversationList.appendChild(li);
     }
     function createConversation(conv, callback) {
-        let li = document.createElement("li");
-        li.setAttribute("id", "link_" + conv.id);
-        li.setAttribute("class", "convLink");
-        li.innerHTML = conv.name;
-        li.addEventListener("click", callback);
-        self.conversationList.appendChild(li);
+        createConversationLink(conv, callback);
 
         let ul = document.createElement("ul");
         ul.setAttribute("id", "conv_"+conv.id);
         ul.setAttribute("class", "convMessages");
         for(var i in conv.messages) {
-            li = document.createElement("li");
+            let li = document.createElement("li");
             li.setAttribute("id", conv.messages[i].id);
             li.setAttribute("class", "convMessage");
             li.innerHTML = '<a href="#" data-userId="'+conv.messages[i].from+'"><' + storage.getUserData("friends")[conv.messages[i].from] + '></a> ' + conv.messages[i].text;

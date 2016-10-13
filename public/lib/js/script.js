@@ -276,7 +276,6 @@
         DOM["body-title"].innerHTML = '<h4>Start a new conversation</h4>';
         DOM["body-text"].innerHTML = '' +
             '<p>Select friends to add to the conversation:</p>' +
-            '<ul id="convFriendList"></ul>' +
             '<button id="createConversationButton">Create Conversation</button>';
         DOM.find("convFriendList");
         DOM.find("createConversationButton");
@@ -297,6 +296,7 @@
             users: members
         };
         socket.emit(events.clientConversationCreate, data);
+        DOM.convFriendList.clear();
     }
 
     function updateConversationData(conv) {
@@ -315,6 +315,7 @@
     function convClickCallback(event) {
         currentConversation = event.target.id.substr(5);
         DOM.showConversation(storage.getConversation(currentConversation));
+        DOM.convFriendList.clear();
     }
 
     function checkForEnter(event) {
