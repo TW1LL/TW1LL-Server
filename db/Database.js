@@ -77,7 +77,7 @@ class Database {
                 .then(() => {resolve('DB prepared');})
                 .catch ((error) => {
                     if (error){
-                        log.event("Error creating table " + error);
+                        log.error("Error creating table " + error);
                         reject(error);
                     }
             })
@@ -114,7 +114,6 @@ class Database {
                     this.Conversation = new Conversation(this);
                     this.Conversation.ready
                         .then(() => {
-                            console.log('conversation ready', this.Conversation.ready);
                             resolve(true);
                         })
                         .catch((err) => console.log('ERR', err))

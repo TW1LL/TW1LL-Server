@@ -47,8 +47,8 @@ app.use(express.static(__dirname + '/public'));
 
 db.connect()
     .then((result) => {
-        http.listen(config.serverPort, function() {
-            log.event('HTTPS server started. Listening on port ' + config.serverPort);
+        http.listen(config.serverPort,() => {
+            log.sys('HTTPS server started. Listening on port ' + config.serverPort);
         });
     })
     .catch((err)=>{console.log('err', err)});

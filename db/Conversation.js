@@ -18,7 +18,7 @@ class ConversationDB {
     }
 
     create(id, users, name) {
-        log.recurrent("Creating conversation " + name);
+        log.debug("Creating conversation " + name);
         log.debug(id);
         log.debug(users);
         let usersString = users.join(', ');
@@ -36,7 +36,7 @@ class ConversationDB {
     }
 
     findByMembers(members){
-        log.recurrent("Retrieving conversation by members" );
+        log.debug("Retrieving conversation by members" );
         log.debug(members);
         let membersString = members.join(', ');
         return new Promise((resolve) => {
@@ -53,44 +53,46 @@ class ConversationDB {
     }
 
     get(id) {
-        log.recurrent("Retrieving conversation " + id);
+        log.debug("Retrieving conversation " + id);
         return new Promise ((resolve, reject) => {
-            this.context.queries.retrieveConversationById.get(id, (err, row) => {
-                log.debug(err);
-                log.debug(row);
-                if (row) {
-                    return resolve(new ConversationDB(row.members, row.name, row.id));
-                } else {
-                    return reject(err);
-                }
-            })
+            this.context.queries.retrieveConversationById.get(id)
+                .then((err, row) => {
+                    log.debug(err);
+                    log.debug(row);
+                    if (row) {
+                        return resolve(new ConversationDB(row.members, row.name, row.id));
+                    } else {
+                        return reject(err);
+                    }
+                })
         })
     }
 
     getList(ids){
-        log.recurrent("Retrieving conversations " + ids);
+        log.debug("Retrieving conversations " + ids);
         let idString = ids.join(', ');
         return new Promise ((resolve, reject) => {
-            this.context.queries.retrieveConversationByIdList.all(idString, function(err, rows) {
-                log.debug(this);
-                log.debug(err);
-                log.debug(rows);
-                if(rows) {
-                    let conversations = {};
-                    for (let data in rows){
-                        conversations[data.id] = rows[data];
+            this.context.queries.retrieveConversationByIdList.all(idString)
+                .then((err, rows) => {
+                    log.debug(this);
+                    log.debug(err);
+                    log.debug(rows);
+                    if(rows) {
+                        let conversations = {};
+                        for (let data in rows){
+                            conversations[data.id] = rows[data];
+                        }
+                        return resolve(conversations);
+                    } else {
+                        return reject(err);
                     }
-                    return resolve(conversations);
-                } else {
-                    return reject(err);
-                }
-            })
+                })
         })
     }
 
     getAll() {
         let getAllConversations = "SELECT * FROM conversations";
-        log.event("Getting all conversations");
+        log.debug("Getting all conversations");
         return new Promise ((resolve, reject) => {
             this.context.db.all(getAllConversations)
                 .then((rows) => {
@@ -115,7 +117,7 @@ class ConversationDB {
                         return Promise.all(messages)
                             .then(() => {resolve(conversations)});
                     } else {
-                        return reject(err);
+                        return reject("No rows returned");
                     }
             })
             .catch((error) => {console.log(error)})

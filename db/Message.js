@@ -11,14 +11,14 @@ class MessageDB {
     }
 
     create(message){
-        log.recurrent("Creating new message " + message.id);
+        log.message("Creating new message " + message.id);
         log.debug(message);
         let data = [message.id, message.conversationId, message.from, message.text, message.timestamp];
         return this.context.queries.createMessage.run(data);
     }
 
     getMessagesForConversation(convId) {
-        log.recurrent("Getting messages for conversation " + convId);
+        log.debug("Getting messages for conversation " + convId);
         return new Promise((resolve, reject) => {
             let messages = {};
             this.context.queries.retrieveMessagesByConversation.all(convId)

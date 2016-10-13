@@ -142,6 +142,7 @@ class UserDB {
     }
 
     register(params) {
+        log.recurrent("Registering new user " + params.email);
         return new Promise((resolve) => {
             bcrypt.genSalt(10, (err, salt) => {
                 bcrypt.hash(params.pass, salt, null)
@@ -175,6 +176,7 @@ class UserDB {
     }
 
     authorize(params) {
+        log.recurrent("Authorizing user " + params.email);
         return new Promise((resolve) => {
             this.findIdByEmail(params.email).then(this.getPassword.bind(this)).then((userPWData) => {
                 log.debug("Password lookup result");
@@ -185,7 +187,7 @@ class UserDB {
                         .then((err, res) => {
                             if (res) {
                                 let user = this.all[userPWData.id].data;
-                                log.event("Auth Success! Generating user token.");
+                                log.debug("Auth Success! Generating user token.");
                                 data = {
                                     valid: true,
                                     token: jwt.sign(user, 'super_secret code', {expiresIn: "7d"}),
@@ -213,6 +215,7 @@ class UserDB {
     }
 
     prepare(userId) {
+        log.recurrent("Preparing user data for " + userId);
         return new Promise((resolve) => {
             if (typeof this.all[userId] === "undefined") {
                 this.get(id)
@@ -225,7 +228,9 @@ class UserDB {
             }
         });
     }
+
     prepareAll() {
+        log.event("Preparing all user data");
         return new Promise((resolve)=> {
             if (Object.keys(this.all).length === 0 && this.all.constructor === Object) {
                 this.getAll()
