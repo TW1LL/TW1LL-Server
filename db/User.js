@@ -182,8 +182,7 @@ class UserDB {
                 log.debug(userPWData);
                 let data;
                 if (userPWData) {
-                    bcrypt.compare(params.password, userPWData.password_hash)
-                        .then((err, res) => {
+                    bcrypt.compare(params.password, userPWData.password_hash, (err, res) => {
                             if (res) {
                                 let user = this.all[userPWData.id].data;
                                 log.debug("Auth Success! Generating user token.");
