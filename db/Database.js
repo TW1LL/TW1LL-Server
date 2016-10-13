@@ -47,9 +47,9 @@ class Database {
         };
     }
 
-    connect() {
+    connect(directory) {
         return new Promise ((resolve, reject) => {
-            db.open('tw1ll.sqlite3', {mode:sqlite3.OPEN_READWRITE, verbose:true}, Promise)
+            db.open('tw1ll.sqlite3', {mode:sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, verbose:true, Promise: Promise})
                 .then((database) => {
                     if (database.driver.open != true) {
                         log.error("Error opening database:", database);
