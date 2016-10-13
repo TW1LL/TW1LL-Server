@@ -2,6 +2,7 @@
 
 let uuid = require('uuid');
 let db = require("sqlite");
+let sqlite3 = require('sqlite3');
 let Log = require('./../Log');
 let log = new Log("high");
 let User = require('./User'),
@@ -12,6 +13,9 @@ class Database {
 
     constructor() {
         this.db = null;
+        this.User = null;
+        this.Message = null;
+        this.Conversation = null;
         this.tableCreateStatements = {
             "createUserTable": "CREATE TABLE IF NOT EXISTS users (id TEXT, email TEXT, friends TEXT, nickname TEXT, conversations TEXT, PRIMARY KEY (id))",
             "createMessageTable": "CREATE TABLE IF NOT EXISTS messages (id TEXT, conversation_id TEXT, from_id TEXT, message TEXT, timestamp TEXT, PRIMARY KEY (id))",
@@ -45,54 +49,75 @@ class Database {
 
     connect() {
         return new Promise ((resolve, reject) => {
-            db.open('tw1ll.sqlite3', { Promise })
+            db.open('tw1ll.sqlite3', {mode:sqlite3.OPEN_READWRITE, verbose:true}, Promise)
                 .then((database) => {
                     if (database.driver.open != true) {
                         log.error("Error opening database:", database);
                         reject(false);
                     } else {
-                        this.db = database.driver;
-                        this.prepareDB()
-                            .then(() => {
-                                this.User = new User(this);
-                                this.User.ready
-                                    .then(() => {
-                                        this.Message = new Message(this);
-                                        this.Conversation = new Conversation(this);
-                                        resolve(true);
-                                    });
-                        });
+                        this.db = database;
+                        this.prepareTables()
+                            .then(this.prepareQueryStatements.bind(this))
+                            .then(this.prepareModels.bind(this))
+                            .then(resolve("Database connected"))
+                            .catch((err) => {reject('connect err' + err)})
                     }
                 })
             })
     }
 
-    prepareDB(){
-        log.event("Preparing DB tables and queries");
-        return new Promise((resolve) => {
-
+    prepareTables(){
+        log.event("Preparing DB tables");
+        return new Promise((resolve, reject) => {
+            let tablePromises = [];
             for (let createStatement in this.tableCreateStatements) {
-                this.db.exec(this.tableCreateStatements[createStatement], function(error){
-                    if (error){
-                        log.event("Error creating table " + createStatement);
-                        log.event(error);
-                    }
-                });
+                tablePromises.push(this.db.exec(this.tableCreateStatements[createStatement]));
             }
+            Promise.all(tablePromises)
+                .then(() => {resolve('DB prepared');})
+                .catch ((error) => {
+                    if (error){
+                        log.error("Error creating table " + error);
+                        reject(error);
+                    }
+            })
+        })
+    }
 
-            let statements  = {};
+    prepareQueryStatements(){
+        log.event("Preparing DB statements");
+        return new Promise((resolve, reject) => {
+            let statementPromises  = [];
+            let statements = {};
             for(let query in this.queries){
                 let queryText = this.queries[query];
-                let preparedStatement = this.db.prepare(queryText, null, function(error){
-                    if (error){
-                        log.event("error preparing query " + query);
-                        log.event(error);
-                    }
-                });
-                statements[query] = preparedStatement;
+                let statement = this.db.prepare(queryText);
+                statementPromises.push(statement);
+                statements[query] = statement.then((stmt) => statements[query] = stmt);
             }
-            this.queries = statements;
-            resolve();
+            Promise.all(statementPromises)
+                .then(() => {
+                    this.queries = statements;
+                    return resolve('Completed preparing statements');
+                });
+        })
+
+    }
+
+    prepareModels(){
+        log.event("Preparing models");
+        return new Promise ((resolve, reject) => {
+            this.User = new User(this);
+            this.User.ready
+                .then((result) => {
+                    this.Message = new Message(this);
+                    this.Conversation = new Conversation(this);
+                    this.Conversation.ready
+                        .then(() => {
+                            resolve(true);
+                        })
+                        .catch((err) => console.log('ERR', err))
+                })
         })
     }
 

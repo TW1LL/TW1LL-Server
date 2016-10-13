@@ -11,24 +11,25 @@ class MessageDB {
     }
 
     create(message){
-        log.recurrent("Creating new message " + message.id);
+        log.message("Creating new message " + message.id);
         log.debug(message);
         let data = [message.id, message.conversationId, message.from, message.text, message.timestamp];
         return this.context.queries.createMessage.run(data);
     }
 
     getMessagesForConversation(convId) {
-        log.recurrent("Getting messages for conversation " + convId);
+        log.debug("Getting messages for conversation " + convId);
         return new Promise((resolve, reject) => {
             let messages = {};
-            this.context.queries.retrieveMessagesByConversation.all(convId, (err, rows) => {
-                for (let i in rows) {
-                    let row = rows[i];
-                    let message = new Message(row.from_id, row.message, row.conversationId, row);
-                    messages[row.id] = message;
-                }
-                resolve(messages);
-            })
+            this.context.queries.retrieveMessagesByConversation.all(convId)
+                .then((rows) => {
+                    for (let i in rows) {
+                        let row = rows[i];
+                        let message = new Message(row.from_id, row.message, row.conversationId, row);
+                        messages[row.id] = message;
+                    }
+                    resolve(messages);
+                })
         })
     }
 }

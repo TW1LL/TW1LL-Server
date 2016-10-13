@@ -13,8 +13,9 @@ class Log {
             "low": 1,
             "off": 0,
             // events threshold
-            "events": 5,
+            "sys": 1,
             "errors": 3,
+            "events": 5,
             "recurrent": 7,
             "message": 9,
             "debug": 10
@@ -52,6 +53,11 @@ class Log {
     message(message) {
         if (this.logLevel >= this.levels["message"]) {
             console.log("MSG >>", message);
+        }
+    }
+    sys(message) {
+        if (this.logLevel >= this.levels["sys"]) {
+            console.log("SYS >>", message);
         }
     }
 }
