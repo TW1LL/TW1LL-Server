@@ -30,7 +30,6 @@ class UserDB {
                         if (typeof result.stmt.lastID !== "undefined" && result.stmt.changes == 1) {
                             return resolve(true);
                         } else {
-                            console.log("err");
                             return reject(result);
                         }
                     });
@@ -108,21 +107,19 @@ class UserDB {
         })
     }
 
-    createNewPassword(userId, hash) {
+    createNewPassword(userId, salt, hash) {
         log.recurrent("Creating new password for " + userId);
         log.debug("PW hash = " + hash);
         return new Promise((resolve, reject) => {
-            console.log('in the promise');
             this.context.queries.createNewPassword.run([userId, '', hash])
                 .then(function(result) {
-                    console.log('result', result);
                     if (typeof result.stmt.lastID !== "undefined" && result.stmt.changes == 1){
                         return resolve(true);
                     } else {
                         reject(result);
                     }
                 })
-                .catch((err) => console.log('err', err));
+                .catch((err) => log.error('Error creating password ' + err));
         });
     }
 
@@ -164,52 +161,51 @@ class UserDB {
         return new Promise((resolve, reject) => {
             let data = [user.id, user.email, user.friends, user.nickname, user.conversations];
             this.context.queries.createUser.run(data)
-                .then(function(err) {
-                    if (this.lastID) {
+                .then((result) => {
+                    if (typeof result.stmt.lastID !== "undefined" && result.stmt.changes == 1) {
                         return resolve(true);
-                    } else {
-                        return reject(err);
                     }
                 })
+                .catch((err) => reject(err));
         });
     }
 
     authorize(params) {
         log.recurrent("Authorizing user " + params.email);
-        return new Promise((resolve) => {
-            this.findIdByEmail(params.email).then(this.getPassword.bind(this)).then((userPWData) => {
-                log.debug("Password lookup result");
-                log.debug(userPWData);
-                let data;
-                if (userPWData) {
-                    bcrypt.compare(params.password, userPWData.password_hash)
-                        .then((err, res) => {
-                            if (res) {
-                                let user = this.all[userPWData.id].data;
-                                log.debug("Auth Success! Generating user token.");
-                                data = {
-                                    valid: true,
-                                    token: jwt.sign(user, 'super_secret code', {expiresIn: "7d"}),
-                                    id: userPWData.id,
-                                    data: user
-                                };
-                                return resolve(data);
-                            } else {
-                                data = {
-                                    valid: false,
-                                    data: "Password doesn't match."
-                                };
-                                return resolve(data);
-                            }
-                        });
-                } else {
-                    data = {
-                        valid: false,
-                        data: "No User found with that email."
-                    };
-                    return resolve(data);
-                }
-            });
+        return new Promise((resolve, reject) => {
+            this.findIdByEmail(params.email).then(this.getPassword.bind(this))
+                .then((userPWData) => {
+                    log.debug("Password lookup result");
+                    log.debug(userPWData);
+                    let data;
+                    if (userPWData) {
+                        bcrypt.compare(params.password, userPWData.password_hash, (err, res) => {
+                                if (res) {
+                                    let user = this.all[userPWData.id].data;
+                                    log.debug("Auth Success! Generating user token.");
+                                    data = {
+                                        valid: true,
+                                        token: jwt.sign(user, 'super_secret code', {expiresIn: "7d"}),
+                                        id: userPWData.id,
+                                        data: user
+                                    };
+                                    return resolve(data);
+                                } else {
+                                    data = {
+                                        valid: false,
+                                        data: "Password doesn't match."
+                                    };
+                                    return reject(data);
+                                }
+                            });
+                    } else {
+                        data = {
+                            valid: false,
+                            data: "No User found with that email."
+                        };
+                        return reject(data);
+                    }
+                });
         })
     }
 

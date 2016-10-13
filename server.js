@@ -70,7 +70,8 @@ app.post('/register/:email/:pass', function (req,res) {
                 res.json(auth);
             }
         );
-    });
+    })
+    .catch((err) => log.error(err));
 });
 
 io.on('connection', jwtIO.authorize({
