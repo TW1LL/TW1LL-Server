@@ -16,7 +16,7 @@ let Log = require('./Log'),
 
 let config = {
     serverPort: 443,
-    logLevel: "med-high"
+    logLevel: "high"
 };
 
 let db = require('./db/Database');
@@ -132,9 +132,9 @@ function createConversation(conversationRequest){
 
 function send(message){
     message = new Message(message.from, message.text, message.conversationId);
-    log.message(db.User.all[message.from].email + " > " + db.Conversation.all[message.conversationId].name);
-    let members = db.Conversation.all[message.conversationId].members;
     let conversation = db.Conversation.all[message.conversationId];
+    log.message(db.User.all[message.from].email + " > " + conversation.name);
+    let members = conversation.members;
     for (let memberId in members) {
        if (memberId in usersOnline && memberId != message.from) {
            let friendSocket = db.User.all[memberId].socket;
@@ -159,13 +159,6 @@ function sendUserList(id) {
         .then((users) => {db.User.all[id].socket.emit(events.serverUserList, users);});
 }
 
-function createUserList() {
-    let list = {};
-    for(var id in users) {
-        list[id] = db.User.all[id].data;
-    }
-    return list;
-}
 
 function createFriendsList(user) {
     log.recurrent("Creating friends list for " + user.id);

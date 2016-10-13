@@ -10,6 +10,7 @@ function Dom(storage) {
     self.createConversationLink = createConversationLink;
     self.showConversation = showConversation;
     self.toggleFriendConvList = toggleFriendConvList;
+    self.updateConversation = updateConversationMessages
     self.addMessage = addMessage;
     self.logout = logout;
     self.clearBody = clearBody;
@@ -121,6 +122,7 @@ function Dom(storage) {
         }
         catch (TypeError) {
             // create the conversation for the message
+            console.log('no conversation for message');
         }
         storage.storeMessage(message);
     }
@@ -165,12 +167,21 @@ function Dom(storage) {
         for(var i = 0; i < convs.length; i++) {
             self[convs[i].id].hide();
         }
+        updateConversationMessages(conv);
         self["conv_"+conv.id].show();
 
-        updateConversationMessages(conv);
     }
 
     function updateConversationMessages(conv) {
+        let messageList = self["conv_"+conv.id];
+        messageList.clear();
+        for(var i in conv.messages) {
+            let li = document.createElement("li");
+            li.setAttribute("id", conv.messages[i].id);
+            li.setAttribute("class", "convMessage");
+            li.innerHTML = '<a href="#" data-userId="'+conv.messages[i].from+'"><' + storage.getUserData("friends")[conv.messages[i].from] + '></a> ' + conv.messages[i].text;
+            messageList.appendChild(li);
+        }
     }
 
     function toggleFriendConvList() {

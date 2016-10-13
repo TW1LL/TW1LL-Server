@@ -6,7 +6,7 @@
     let events, currentConversation, currentUserId;
     let storage = new Storage();
     let DOM = new Dom(storage);
-
+    let user = new User();
     addEventListener("DOMContentLoaded", ready);
 
     function ready() {
@@ -16,29 +16,29 @@
                 "loginSubmit", "loginEmail", "loginPassword",
                 "registerSubmit", "registerEmail", "registerPassword", "registerPassword2", "registerError", "friendList",
                 "userInfo", "userInfoDropdown", "userInfoLink",
-                "userLogout",
+                "userLogout", "sendMsg", "convFriendList",
                 "body-title", "body-text", "toggleFriendList", "toggleConversationList", "friends", "conversations", "sidepane"
             ]);
         DOM.modal.init();
-        DOM.userInfoDropdown.hide();
-        DOM.findFriendsModal.hide();
-        DOM.find("submit").on("click", sendMsg);
-        DOM.loginSubmit.on("click", login);
-        DOM.findFriendsSubmit.on("click", addFriends);
-        DOM.addFriendsLink.on("click", friendsModal);
-        DOM.newConvButton.on("click", newConversation);
-        DOM.addFriendsLink.hide();
-        DOM.friendList.hide();
-        DOM.sidepane.hide();
-        DOM.registerSubmit.on("click", register);
-        DOM.toggleFriendList.on("click", DOM.toggleFriendConvList);
-        DOM.toggleConversationList.on("click", DOM.toggleFriendConvList);
+        DOM.userInfoDropdown        .hide();
+        DOM.findFriendsModal        .hide();
+        DOM.addFriendsLink          .hide();
+        DOM.friendList              .hide();
+        DOM.sidepane                .hide();
+        DOM.sendMsg                 .on("click", sendMsg);
+        DOM.findFriendsSubmit       .on("click", addFriends);
+        DOM.addFriendsLink          .on("click", friendsModal);
+        DOM.newConvButton           .on("click", newConversation);
+        DOM.toggleFriendList        .on("click", DOM.toggleFriendConvList);
+        DOM.toggleConversationList  .on("click", DOM.toggleFriendConvList);
+        DOM.userInfoLink            .on("click", loginModal);
+        DOM.loginSubmit             .on("click", user.login);
+        DOM.registerSubmit          .on("click", user.register);
+        DOM.registerEmail           .on("keyup", user.registerCheckEmail);
+        DOM.registerPassword2       .on("keyup", user.registerCheckPW);
+        DOM.messageBox              .on("keypress", checkForEnter);
+        DOM.userLogout              .on("click", user.logout);
         DOM.registerSubmit.disabled = true;
-        DOM.userInfoLink.on("click", loginModal);
-        DOM.messageBox.on("keypress", checkForEnter);
-        DOM.registerEmail.on("keyup", registerCheckEmail);
-        DOM.registerPassword2.on("keyup", registerCheckPW);
-        DOM.userLogout.on("click", logout);
         checkLoginStatus();
     }
 
@@ -89,82 +89,90 @@
             DOM.modal.open();
         }
     }
-    function login(e) {
-        let http = new XMLHttpRequest();
-        http.open("POST", "/login/"+DOM.loginEmail.value+"/"+DOM.loginPassword.value, true);
-        http.send();
-        http.onload = function() {
-            let res = JSON.parse(this.response);
-            if (res.valid) {
-                storage.setUser(res.data);
-                storage.setUserToken(res.token);
-                DOM.modal.close();
-                connect();
-            } else {
-                sendError(res.data);
-                storage.clearUser();
+    function User() {
+        this.login = login;
+        this.register = register;
+        this.registerCheckPW = registerCheckPW;
+        this.registerCheckEmail = registerCheckEmail;
+        this.logout = logout;
+        function login(e) {
+            let http = new XMLHttpRequest();
+            http.open("POST", "/login/" + DOM.loginEmail.value + "/" + DOM.loginPassword.value, true);
+            http.send();
+            http.onload = function () {
+                let res = JSON.parse(this.response);
+                if (res.valid) {
+                    storage.setUser(res.data);
+                    storage.setUserToken(res.token);
+                    DOM.modal.close();
+                    connect();
+                } else {
+                    sendError(res.data);
+                    storage.clearUser();
 
-            }
-        };
-        e.preventDefault();
-        return false;
-    }
-
-    function register(e) {
-        let http = new XMLHttpRequest();
-        http.open("POST", "/register/"+DOM.registerEmail.value+"/"+DOM.registerPassword.value, true);
-        http.send();
-        http.onload = function() {
-            let res = JSON.parse(this.response);
-            if (res.valid) {
-                storage.setUser(res.data);
-                storage.setUserToken(res.token);
-                updateUserList(res.userList);
-                connect();
-                DOM.modal.switch("findFriendsModal");
-            } else {
-                sendError(res.data);
-                storage.clearUser();
-            }
-        };
-        e.preventDefault();
-        return false;
-    }
-
-    function registerCheckPW() {
-        if(DOM.registerPassword.value.length > 0) {
-            if(DOM.registerPassword2.value == DOM.registerPassword.value) {
-                if(registerCheckEmail()) {
-                    DOM.registerSubmit.disabled = false;
-                    DOM.registerError.innerText = '';
                 }
-            } else {
-                DOM.registerError.innerText = "Passwords do not match";
-            }
-        } else {
-            DOM.registerError.innerText = "Please enter a password";
-        }
-    }
-    function registerCheckEmail() {
-        if(DOM.registerEmail.value.length > 0) {
-            if(DOM.registerEmail.value.indexOf("@") == -1) {
-                DOM.registerError.innerText = "Please enter an email";
-                return false;
-            } else {
-                DOM.registerError.innerText = '';
-                return true;
-            }
-        } else {
+            };
+            e.preventDefault();
             return false;
         }
-    }
 
-    function logout() {
-        storage.clearUser();
-        DOM.logout();
-        socket.disconnect();
-    }
+        function register(e) {
+            let http = new XMLHttpRequest();
+            http.open("POST", "/register/" + DOM.registerEmail.value + "/" + DOM.registerPassword.value, true);
+            http.send();
+            http.onload = function () {
+                let res = JSON.parse(this.response);
+                if (res.valid) {
+                    storage.setUser(res.data);
+                    storage.setUserToken(res.token);
+                    updateUserList(res.userList);
+                    connect();
+                    DOM.modal.switch("findFriendsModal");
+                } else {
+                    sendError(res.data);
+                    storage.clearUser();
+                }
+            };
+            e.preventDefault();
+            return false;
+        }
 
+        function registerCheckPW() {
+            if (DOM.registerPassword.value.length > 0) {
+                if (DOM.registerPassword2.value == DOM.registerPassword.value) {
+                    if (registerCheckEmail()) {
+                        DOM.registerSubmit.disabled = false;
+                        DOM.registerError.innerText = '';
+                    }
+                } else {
+                    DOM.registerError.innerText = "Passwords do not match";
+                }
+            } else {
+                DOM.registerError.innerText = "Please enter a password";
+            }
+        }
+
+        function registerCheckEmail() {
+            if (DOM.registerEmail.value.length > 0) {
+                if (DOM.registerEmail.value.indexOf("@") == -1) {
+                    DOM.registerError.innerText = "Please enter an email";
+                    return false;
+                } else {
+                    DOM.registerError.innerText = '';
+                    return true;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        function logout() {
+            storage.clearUser();
+            DOM.logout();
+            socket.disconnect();
+        }
+
+    }
     function sendError(message) {
         alert(message);
     }
@@ -277,7 +285,6 @@
         DOM["body-text"].innerHTML = '' +
             '<p>Select friends to add to the conversation:</p>' +
             '<button id="createConversationButton">Create Conversation</button>';
-        DOM.find("convFriendList");
         DOM.find("createConversationButton");
         DOM.createConversationButton.on("click", createConversation);
         updateList(storage.getUserFriends(), "convFriendList", "checkbox");
@@ -378,7 +385,7 @@
     }
 
     function updateList(list, location, type) {
-        DOM[location].innerHTML = '';
+        DOM[location].clear();
         if(typeof type === "undefined") {
             type = "link";
         }
