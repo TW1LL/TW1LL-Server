@@ -59,7 +59,7 @@ class Database {
                         this.prepareTables()
                             .then(this.prepareQueryStatements.bind(this))
                             .then(this.prepareModels.bind(this))
-                            .then(resolve("Database connected"))
+                            .then(() => resolve("Database connected"))
                             .catch((err) => {reject('connect err' + err)})
                     }
                 })
@@ -74,13 +74,10 @@ class Database {
                 tablePromises.push(this.db.exec(this.tableCreateStatements[createStatement]));
             }
             Promise.all(tablePromises)
-                .then(() => {resolve('DB prepared');})
-                .catch ((error) => {
-                    if (error){
-                        log.error("Error creating table " + error);
-                        reject(error);
-                    }
-            })
+                .then(() => {
+                    resolve('DB prepared');
+                })
+                .catch ((error) => {reject(error);})
         })
     }
 
@@ -98,8 +95,9 @@ class Database {
             Promise.all(statementPromises)
                 .then(() => {
                     this.queries = statements;
-                    return resolve('Completed preparing statements');
-                });
+                    resolve('Completed preparing statements');
+                })
+                .catch((err) => reject(err));
         })
 
     }
