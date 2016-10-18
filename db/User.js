@@ -20,7 +20,7 @@ class UserDB {
     }
 
     saveFriends(user) {
-        log.recurrent("Saving friends for " + user.id);
+        log.recurrent("Saving friends for " + user.email);
         return new Promise((resolve, reject) => {
             let friends = user.friends.join(', ');
             let localUser = this.all[user.id];
@@ -38,6 +38,27 @@ class UserDB {
             }
         })
     }
+
+    saveConversations(user) {
+        log.recurrent("Saving conversations for " + user.email);
+        return new Promise ((resolve, reject) => {
+            if (typeof user !== "undefined") {
+                console.log([user.conversations.join(', '), Date.now().toString(), user.id]);
+                this.context.queries.saveConversations.run([user.conversations.join(', '), Date.now().toString(), user.id])
+                    .then((result) => {
+                        console.log("result", result);
+                        if (typeof result.stmt.lastID !== "undefined" && result.stmt.changes == 1) {
+                            return resolve(true);
+                        } else {
+                            return reject(result);
+                        }
+                    })
+            } else {
+                reject("No user passed to save conversations for.")
+            }
+        })
+    }
+
 
     getPassword(userId) {
         log.recurrent("Retrieving password for " + userId);
@@ -173,7 +194,8 @@ class UserDB {
     authorize(params) {
         log.recurrent("Authorizing user " + params.email);
         return new Promise((resolve, reject) => {
-            this.findIdByEmail(params.email).then(this.getPassword.bind(this))
+            this.findIdByEmail(params.email)
+                .then(this.getPassword.bind(this))
                 .then((userPWData) => {
                     log.debug("Password lookup result");
                     log.debug(userPWData);
@@ -205,7 +227,8 @@ class UserDB {
                         };
                         return reject(data);
                     }
-                });
+                })
+                .catch((error) => {reject(error)});
         })
     }
 

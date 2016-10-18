@@ -105,27 +105,38 @@ function connectSocket(socket) {
     socket.on(events.clientMessageSend, send);
     socket.on(events.clientConversationCreate, createConversation);
     socket.on(events.clientRequestConversation, provideConversation);
-
 }
 
-function createConversation(conversationRequest){
+function createConversation(convRequest){
+    console.log('Request', convRequest.userId);
     // when one user starts a conversation, provides either the existing conversation or creates a new one
-    let members = [];
-    for (let i in conversationRequest.users) {
-        members[i] = db.User.all[conversationRequest.users[i]].email;
+    let members = {};
+    let names = [];
+    let user = db.User.all[convRequest.userId];
+
+    for (let i in convRequest.users) {
+        let user = db.User.all[convRequest.users[i]];
+        names.push(user.email);
+        members[user.id] = user;
     }
-    let name = members.join(", ");
+    let name = names.join(", ");
 
     let conversation = null;
     new Promise((resolve, reject) => {
-        db.Conversation.findByMembers(conversationRequest.users)
+        db.Conversation.findByMembers(convRequest.users)
             .then((existing) => {
                 if (existing){
+                    console.log('existing', existing);
                     conversation = new Conversation(existing.members, existing.name, existing.id);
                     return resolve(conversation);
                 } else {
-                    conversation = new Conversation(conversationRequest.users, name);
-                    db.Conversation.create(conversation.id, conversationRequest.users, name)
+                    conversation = new Conversation(convRequest.users, name);
+                    db.Conversation.create(conversation.id, convRequest.users, name)
+                        .then(() => {
+                            user.addConversation(conversation.id);
+                            db.User.saveConversations(user);
+                            db.Conversation.all[conversation.id] = conversation;
+                        })
                         .then(() => {return resolve(conversation)})
                         .catch((err) => reject(err));
                 }
@@ -133,7 +144,7 @@ function createConversation(conversationRequest){
     })
     .then((conv) => {
         db.Conversation.all[conv.id] = conv;
-        db.User.all[conversationRequest.userId].socket.emit(events.serverConversationData, conv)
+        db.User.all[convRequest.userId].socket.emit(events.serverConversationData, conv)
     })
     .catch((err) => log.debug('Error creating conversation ' + err));
 }
@@ -144,8 +155,9 @@ function send(message){
     log.message(db.User.all[message.from].email + " > " + conversation.name);
 
     let members = conversation.members;
-    for (let memberId in members) {
-        let member = db.User.all[memberId];
+    console.log(members);
+    for (let i in members) {
+        let member = db.User.all[members[i]];
 
         // receiving conversation member is online
         if (member.id in usersOnline && member.id != message.from) {
@@ -218,30 +230,47 @@ function addFriends(data){
 }
 
 function syncConversations(conversations) {
-    let user = conversations[0];
+    console.log('Syncing', conversations);
+    let user = db.User.all[conversations[0].id];
     let clientConvs = conversations[1];
     log.recurrent("Syncing conversations for " + user.id);
-    log.debug(clientConvs);
     // get conversations from server
     let serverConvs = db.User.all[user.id].conversations;
     let missingConvs = {};
-    for (let convId in serverConvs) {
-        if (convId in clientConvs) {
-            let clientMessages = clientConvs[convId];
-            for (let message in serverConvs[convId]){
-                if (!clientMessages.contains(message)){
-                    missingConvs[convId] = serverConvs[convId];
-                    break;
+    if (Object.keys(clientConvs).length > 0) {
+        for (let i in serverConvs) {
+            let convId = serverConvs[i];
+            if (convId in clientConvs) {
+                let clientMessages = clientConvs[convId];
+                for (let message in serverConvs[convId]){
+                    if (!clientMessages.contains(message)){
+                        missingConvs[convId] = serverConvs[convId];
+                        break;
+                    }
                 }
+            } else {
+                missingConvs[convId] = serverConvs[convId];
             }
-        } else {
-            missingConvs[convId] = serverConvs[convId];
         }
+    } else {
+        log.debug('No conversations from client');
+        for (let i in serverConvs) {
+            let convId = serverConvs[i];
+            missingConvs[convId] = db.Conversation.all[convId];
+        }
+        missingConvs = serverConvs;
+    }
+    console.log("Missing convs", missingConvs);
+    for (let i in missingConvs) {
+        let request = [user.id, missingConvs[i]];
+        provideConversation(request);
     }
 }
 
 function provideConversation(convRequest) {
-    let userId = convRequest.user;
-    let conversationId = convRequest.conversation;
-    let conversation = db.Conversation.get(conversationId);
+    let user = db.User.all[convRequest[0]];
+    let conversationId = convRequest[1];
+    let conversation = db.Conversation.all[conversationId];
+    log.recurrent("Sending conversation " + conversation.name + " to " + user.email);
+    user.socket.emit(events.serverConversationData, conversation);
 }

@@ -29,7 +29,7 @@ class Database {
             "getUser": "SELECT * FROM users WHERE id = ?",
             "findIdByEmail": "SELECT id FROM users WHERE email = ?",
             "saveFriends": "UPDATE users SET friends = ?, last_modified_date = ? WHERE id = ?",
-            "updateConversations": "UPDATE users SET conversations = ?, last_modified_date = ? WHERE id = ?",
+            "saveConversations": "UPDATE users SET conversations = ?, last_modified_date = ? WHERE id = ?",
             "getConversations": "SELECT conversations FROM users WHERE id = ?",
             // user password queries
             "retrievePassword": "SELECT * FROM user_passwords WHERE id = ?",
